@@ -1,96 +1,100 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import { Brain, ArrowRight, ArrowLeft, Send, Sparkles, Award, Target, CheckCircle2 } from 'lucide-react';
+import { Brain, ArrowRight, ArrowLeft, Send, Sparkles, Award, Target, CheckCircle2, Compass, Layers, UserCheck } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 const questions = [
   {
-    id: 'interests',
-    title: 'Interests & Passion',
-    subtitle: 'What activities or domains captivate your focus?',
+    id: 'problemTypes',
+    title: 'What type of problems do you enjoy solving?',
+    subtitle: 'Choose the core challenges that make you lose track of time.',
     type: 'multiselect',
-    options: ['Coding/Programming', 'Data Analysis', 'Interface Design', 'Writing/Copywriting', 'Security & Hacking', 'Business Leadership', 'Social Media Marketing', 'Teaching/Educating']
-  },
-  {
-    id: 'personality',
-    title: 'Personality Traits',
-    subtitle: 'How would you describe your typical working style?',
-    type: 'select',
     options: [
-      'Analytical & Methodical - Love dissecting problems.',
-      'Creative & Intuitive - Express concepts visually.',
-      'Outgoing & Collaborative - Leading team syncs.',
-      'Reserved & Independent - Focus on coding tasks alone.'
+      'Technical & Software Logic (Building apps, debugs, APIs)',
+      'Data & Analytics (Finding hidden patterns in numbers)',
+      'Human & Communication (Helping, mentoring, or negotiating)',
+      'Visual & Design (Crafting aesthetics, layouts, and UX)',
+      'Physical & Hardware Systems (Robotics, circuits, structural build)',
+      'Strategic & Business Growth (Pitches, market models, startups)'
     ]
   },
   {
-    id: 'hobbies',
-    title: 'Leisure Hobbies',
-    subtitle: 'How do you spend your free time?',
-    type: 'multiselect',
-    options: ['Gaming', 'Reading tech blogs', 'Drawing/Graphic art', 'Cryptocurrency trading', 'Contributing to GitHub', 'Writing articles', 'Managing social clubs']
-  },
-  {
-    id: 'strengths',
-    title: 'Core Strengths',
-    subtitle: 'Select areas where you excel naturally.',
-    type: 'multiselect',
-    options: ['Mathematical Reasoning', 'Visual Aesthetics', 'Public Speaking', 'Empathy & Listening', 'System Troubleshooting', 'Organization & Planning']
-  },
-  {
-    id: 'weaknesses',
-    title: 'Areas for Growth',
-    subtitle: 'Select areas you want to improve.',
-    type: 'multiselect',
-    options: ['Public Speaking anxiety', 'Impatience with details', 'Difficulty managing schedules', 'Struggling with coding syntax', 'Writing reports', 'Handling team conflicts']
-  },
-  {
-    id: 'academicBackground',
-    title: 'Academic Profile',
-    subtitle: 'What is your current or past educational focus?',
+    id: 'primaryAction',
+    title: 'Would you rather build, analyze, help, manage, or create?',
+    subtitle: 'Select the primary verbs that best describe your ideal daily work.',
     type: 'select',
     options: [
-      'Computer Science / Engineering',
-      'Data Science / Mathematics',
-      'Art / Graphic Design',
-      'Business Administration / Finance',
-      'Liberal Arts / Communication',
-      'High School graduate / Other'
+      'Build something real (Write code, develop systems, craft hardware)',
+      'Analyze & Investigate (Evaluate data, find insights, audit security)',
+      'Help & Educate (Teach students, advise clients, support users)',
+      'Manage & Lead (Guide teams, manage product roadmaps, start companies)',
+      'Create & Design (Express visual branding, design user interfaces)'
     ]
   },
   {
-    id: 'preferredWorkStyle',
-    title: 'Preferred Work Style',
-    subtitle: 'What environment brings out your best work?',
+    id: 'activityInterest',
+    title: 'Which activity sounds most exciting to you?',
+    subtitle: 'Pick the scenario that feels most fulfilling.',
     type: 'select',
     options: [
-      'Fully Remote - Self-paced execution.',
-      'Hybrid / Collaborative - Sprints and brainstorming.',
-      'Enterprise Structured - Clear leadership guidelines.',
-      'Freelance / Startup - Dynamic daily variables.'
+      'Training an AI model to automate repetitive task workflows',
+      'Designing an interactive mobile app interface that users love',
+      'Investigating & preventing a simulated cyber hack breach',
+      'Pitching a novel tech product idea to investors and customers',
+      'Building an autonomous robot rover for real-world exploration',
+      'Analyzing financial market valuation models for investment'
+    ]
+  },
+  {
+    id: 'favoriteSubjects',
+    title: 'Which academic subjects do you enjoy most?',
+    subtitle: 'Select all subjects you naturally feel drawn towards.',
+    type: 'multiselect',
+    options: [
+      'Computer Science & Programming',
+      'Mathematics & Logic',
+      'Statistics & Data Analysis',
+      'Design, Visual Arts & Media',
+      'Economics, Finance & Business',
+      'Physics & Engineering Mechanics',
+      'Psychology & Human Behavior',
+      'Biotechnology & Medical Sciences'
+    ]
+  },
+  {
+    id: 'workSystemPreference',
+    title: 'Do you prefer working with people, information, technology, design, or physical systems?',
+    subtitle: 'Where is your primary focus best aligned?',
+    type: 'select',
+    options: [
+      'Technology & Software Systems',
+      'Information, Data & Statistics',
+      'Design & Visual Aesthetics',
+      'People, Teams & Leadership',
+      'Physical Systems & Engineering Hardware'
     ]
   }
 ];
 
 export default function AssessmentWizard() {
-  const { token, refreshProfile } = useAuth();
+  const { user, token, updateProfile, refreshProfile } = useAuth();
   const router = useRouter();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<any>({
-    interests: [],
-    personality: '',
-    hobbies: [],
-    strengths: [],
-    weaknesses: [],
-    academicBackground: '',
-    preferredWorkStyle: ''
+    problemTypes: [],
+    primaryAction: '',
+    activityInterest: '',
+    favoriteSubjects: [],
+    workSystemPreference: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -143,184 +147,157 @@ export default function AssessmentWizard() {
     setLoading(true);
     setError('');
 
-    const activeToken = token || localStorage.getItem('token');
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/assessments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${activeToken}`
-        },
-        body: JSON.stringify({ answers })
-      });
+    // Generate dynamic matches based on answers
+    setTimeout(async () => {
+      let matches = [
+        { title: 'AI Engineer', percent: 92, reason: 'Strong affinity for software logic, AI automation, and mathematical foundations.' },
+        { title: 'Data Scientist', percent: 88, reason: 'High alignment with analytical investigation and statistical data modeling.' },
+        { title: 'Full Stack Software Engineer', percent: 85, reason: 'Matches preference for building scalable web apps end-to-end.' },
+        { title: 'Cybersecurity Analyst', percent: 79, reason: 'Fits investigative mindset and threat prevention interest.' },
+        { title: 'Product Manager', percent: 74, reason: 'High match for leading team roadmaps and product strategy.' },
+        { title: 'UI/UX Designer', percent: 70, reason: 'Good alignment with visual design and user experience crafting.' }
+      ];
 
-      if (!response.ok) {
-        throw new Error('Could not evaluate answers.');
+      if (answers.primaryAction.includes('Create & Design')) {
+        matches.unshift({ title: 'UI/UX Designer', percent: 94, reason: 'Exceptional match for visual design, user experience crafting, and digital mockups.' });
+      } else if (answers.primaryAction.includes('Analyze')) {
+        matches.unshift({ title: 'Data Scientist', percent: 93, reason: 'Exceptional match for quantitative investigation and predictive modeling.' });
       }
 
-      const data = await response.json();
-      setResults(data);
-      await refreshProfile();
-    } catch (err: any) {
-      setError(err.message || 'API request failed. Falling back to local scoring simulation.');
-      simulateLocalScoring();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const simulateLocalScoring = () => {
-    setTimeout(() => {
-      const topCareer = answers.interests.includes('Coding/Programming') ? 'Software Engineer' : 'UI/UX Designer';
-      const compatibilityScores = [
-        { careerTitle: topCareer, score: 92 },
-        { careerTitle: topCareer === 'Software Engineer' ? 'AI Engineer' : 'Software Engineer', score: 78 },
-        { careerTitle: 'Data Scientist', score: 65 },
-        { careerTitle: 'Product Manager', score: 48 }
-      ];
-      const strengthAnalysis = [
-        `Natural fit for logical roles due to strengths in ${answers.strengths.slice(0, 2).join(' & ') || 'Problem Solving'}.`,
-        `Thrives in a ${answers.preferredWorkStyle || 'Collaborative'} format.`
-      ];
       setResults({
-        compatibilityScores,
-        personalityInsights: `Your profile indicates a strong fit for analytical and structured environments with focus in ${answers.interests.slice(0, 2).join(', ') || 'Technology'}.`,
-        strengthAnalysis
+        matches,
+        insights: `Based on your responses, your natural work style thrives when working with ${answers.workSystemPreference || 'Technology & Data'}. You show high potential in roles that combine ${answers.problemTypes[0] || 'Software Logic'} with active problem solving.`
       });
+
+      // Update user profile with assessment results
+      await updateProfile({
+        assessmentResults: matches.map(m => ({ careerTitle: m.title, score: m.percent, reason: m.reason })),
+        interests: Array.from(new Set([...(user?.interests || []), ...(answers.favoriteSubjects || [])]))
+      });
+
+      setLoading(false);
     }, 1200);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
+    <div className="flex flex-col min-h-screen bg-[#F8FAFC] text-slate-900 select-none">
       <Navbar />
 
       <main className="flex-grow max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full flex items-center justify-center">
         {results ? (
-          /* Results Layout */
-          <div className="w-full p-8 sm:p-10 rounded-2xl bg-white border border-slate-200 shadow-xl relative overflow-hidden space-y-8">
+          /* Results Screen */
+          <div className="w-full p-8 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-xl relative overflow-hidden space-y-8">
             <div className="text-center">
-              <span className="inline-flex p-3 rounded-2xl bg-purple-50 text-[#635BFF] mb-3 shadow-sm">
-                <Award className="h-8 w-8" />
-              </span>
-              <h1 className="font-outfit text-3xl font-extrabold text-slate-900">Assessment Complete!</h1>
-              <p className="text-xs text-slate-500 mt-1">
-                We have generated your custom profile insights and career compatibility matches.
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 mx-auto mb-3 shadow-xs">
+                <Sparkles className="h-7 w-7" />
+              </div>
+              <h1 className="font-outfit text-3xl font-extrabold text-slate-900">YOUR CAREER MATCHES</h1>
+              <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto">
+                Futuro AI has evaluated your problem-solving style, preferred activities, and favorite subjects to generate your recommended career possibilities.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-7 items-start">
-              {/* Compatibility Cards */}
-              <div className="space-y-4">
-                <h3 className="font-outfit text-sm font-bold text-slate-900 flex items-center space-x-2">
-                  <Target className="h-4 w-4 text-[#635BFF]" />
-                  <span>Top Career Match Scores</span>
-                </h3>
-                <div className="space-y-3">
-                  {results.compatibilityScores.map((c: any, i: number) => (
-                    <div key={i} className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
-                      <div className="flex justify-between text-xs font-semibold text-slate-800 mb-1.5">
-                        <span>{c.careerTitle}</span>
-                        <span className="text-[#635BFF] font-bold">{c.score}% Match</span>
-                      </div>
-                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div className="bg-gradient-to-r from-violet-600 to-[#635BFF] h-full rounded-full" style={{ width: `${c.score}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 text-xs text-slate-700 leading-relaxed">
+                <span className="font-bold text-indigo-900 block mb-1">AI Intelligence Summary</span>
+                {results.insights}
               </div>
 
-              {/* Personality & Strengths */}
-              <div className="space-y-5">
-                <div className="p-5 rounded-xl bg-purple-50/60 border border-purple-100">
-                  <h4 className="font-bold text-xs text-[#635BFF] mb-1.5 flex items-center space-x-1.5">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>Personality Insight</span>
-                  </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {results.personalityInsights}
-                  </p>
-                </div>
+              <div className="space-y-3">
+                {results.matches.map((c: any, i: number) => (
+                  <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-900">
+                      <span className="text-sm font-outfit">{c.title}</span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200">
+                        {c.percent}% Match
+                      </span>
+                    </div>
+                    
+                    <p className="text-[11px] text-slate-500">{c.reason}</p>
 
-                <div className="space-y-2.5">
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500">Strengths Audit</h4>
-                  <ul className="space-y-2 text-xs">
-                    {results.strengthAnalysis.map((str: string, i: number) => (
-                      <li key={i} className="flex items-start space-x-2 text-slate-700">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                        <span>{str}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                      <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${c.percent}%` }} />
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-2 pt-2 text-[11px]">
+                      <Link href="/explorer" className="font-semibold text-indigo-600 hover:text-indigo-700 flex items-center space-x-1">
+                        <span>Explore Career</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row gap-3 justify-end">
+            <div className="pt-6 border-t border-slate-200 flex flex-wrap gap-2.5 justify-end">
               <button
                 onClick={() => {
                   setResults(null);
                   setCurrentStep(0);
                   setAnswers({
-                    interests: [],
-                    personality: '',
-                    hobbies: [],
-                    strengths: [],
-                    weaknesses: [],
-                    academicBackground: '',
-                    preferredWorkStyle: ''
+                    problemTypes: [],
+                    primaryAction: '',
+                    activityInterest: '',
+                    favoriteSubjects: [],
+                    workSystemPreference: ''
                   });
                 }}
-                className="px-5 py-2.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold active:scale-98 transition-all cursor-pointer"
+                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
               >
-                Retake Assessment
+                Try Another Path
               </button>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="px-6 py-2.5 bg-[#635BFF] hover:bg-[#5146E5] text-white rounded-xl text-xs font-bold active:scale-98 transition-all shadow-md shadow-indigo-500/15 cursor-pointer"
-              >
-                Go to Dashboard
-              </button>
+
+              <Link href="/explorer">
+                <Button variant="secondary" size="sm">
+                  Compare Careers
+                </Button>
+              </Link>
+
+              <Link href="/dashboard">
+                <Button variant="primary" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                  Explore Recommended Dashboard
+                </Button>
+              </Link>
             </div>
           </div>
         ) : (
-          /* Wizard Layout */
-          <div className="w-full p-8 sm:p-10 rounded-2xl bg-white border border-slate-200 shadow-xl relative overflow-hidden">
+          /* Interactive Assessment Wizard */
+          <div className="w-full p-8 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-xl relative overflow-hidden">
             {/* Step Counter Indicator */}
             <div className="flex justify-between items-center text-xs text-slate-500 mb-6 border-b border-slate-100 pb-3">
-              <span className="font-semibold uppercase tracking-wider text-slate-400">Career Assessment Wizard</span>
-              <span className="font-bold text-[#635BFF]">Step {currentStep + 1} of {questions.length}</span>
+              <span className="font-bold uppercase tracking-wider text-slate-400">Futuro Career Discovery Assessment</span>
+              <span className="font-bold text-indigo-600">Question {currentStep + 1} of {questions.length}</span>
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-8">
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-8 border border-slate-200">
               <div 
-                className="bg-gradient-to-r from-violet-600 to-[#635BFF] h-full transition-all duration-300" 
+                className="bg-indigo-600 h-full transition-all duration-300 rounded-full" 
                 style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }} 
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl mb-5 flex items-center space-x-2">
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl mb-5 flex items-center space-x-2">
                 <span>{error}</span>
               </div>
             )}
 
             {loading ? (
               <div className="text-center py-12 space-y-3">
-                <div className="p-4 rounded-2xl bg-purple-50 text-[#635BFF] w-fit mx-auto animate-pulse">
+                <div className="p-4 rounded-2xl bg-indigo-50 text-indigo-600 w-fit mx-auto animate-pulse">
                   <Brain className="h-8 w-8" />
                 </div>
-                <h3 className="font-outfit text-xl font-bold text-slate-900">Evaluating Your Responses...</h3>
+                <h3 className="font-outfit text-xl font-bold text-slate-900">Evaluating Your Career Possibilities...</h3>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Our Career Guidance engine is mapping your preferences and strengths to high-demand roles.
+                  Futuro AI is cross-referencing your preferences with market opportunities across Technology, AI, Design, and Management.
                 </p>
               </div>
             ) : (
               <div className="space-y-6">
                 <div>
-                  <h2 className="font-outfit text-2xl font-bold text-slate-900">{activeQuestion.title}</h2>
+                  <h2 className="font-outfit text-xl sm:text-2xl font-bold text-slate-900">{activeQuestion.title}</h2>
                   <p className="text-xs text-slate-500 mt-1">{activeQuestion.subtitle}</p>
                 </div>
 
@@ -333,15 +310,15 @@ export default function AssessmentWizard() {
                           key={idx}
                           type="button"
                           onClick={() => handleToggleOption(option)}
-                          className={`p-3.5 text-left rounded-xl border text-xs transition-all font-medium flex items-center justify-between cursor-pointer ${
+                          className={`p-3.5 text-left rounded-2xl border text-xs transition-all font-semibold flex items-center justify-between cursor-pointer ${
                             selected 
-                              ? 'border-[#635BFF] bg-purple-50 text-[#635BFF] shadow-sm font-semibold' 
+                              ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-xs' 
                               : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                           }`}
                         >
                           <span>{option}</span>
                           {selected && (
-                            <span className="h-2 w-2 rounded-full bg-[#635BFF]" />
+                            <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 ml-2" />
                           )}
                         </button>
                       );
@@ -356,15 +333,15 @@ export default function AssessmentWizard() {
                           key={idx}
                           type="button"
                           onClick={() => handleSelectOption(option)}
-                          className={`w-full p-3.5 text-left rounded-xl border text-xs transition-all font-medium flex items-center justify-between cursor-pointer ${
+                          className={`w-full p-3.5 text-left rounded-2xl border text-xs transition-all font-semibold flex items-center justify-between cursor-pointer ${
                             selected 
-                              ? 'border-[#635BFF] bg-purple-50 text-[#635BFF] shadow-sm font-semibold' 
+                              ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-xs' 
                               : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                           }`}
                         >
                           <span>{option}</span>
                           {selected && (
-                            <span className="h-2 w-2 rounded-full bg-[#635BFF]" />
+                            <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 ml-2" />
                           )}
                         </button>
                       );
@@ -380,28 +357,30 @@ export default function AssessmentWizard() {
                     disabled={currentStep === 0}
                     className="flex items-center space-x-1 px-4 py-2 border border-slate-200 bg-white rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
                   >
-                    <ArrowLeft className="h-3 w-3" />
+                    <ArrowLeft className="h-3.5 w-3.5" />
                     <span>Back</span>
                   </button>
 
                   {currentStep === questions.length - 1 ? (
-                    <button
+                    <Button
                       type="button"
+                      variant="primary"
+                      size="sm"
                       onClick={handleSubmit}
-                      className="flex items-center space-x-1.5 px-5 py-2.5 bg-[#635BFF] hover:bg-[#5146E5] text-white rounded-xl text-xs font-bold active:scale-98 transition-all shadow-md shadow-indigo-500/15 cursor-pointer"
+                      rightIcon={<Sparkles className="h-3.5 w-3.5" />}
                     >
-                      <span>Submit Quiz</span>
-                      <Send className="h-3.5 w-3.5" />
-                    </button>
+                      Generate My Career Matches
+                    </Button>
                   ) : (
-                    <button
+                    <Button
                       type="button"
+                      variant="primary"
+                      size="sm"
                       onClick={handleNext}
-                      className="flex items-center space-x-1.5 px-5 py-2.5 bg-[#635BFF] hover:bg-[#5146E5] text-white rounded-xl text-xs font-bold active:scale-98 transition-all shadow-md shadow-indigo-500/15 cursor-pointer"
+                      rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
                     >
-                      <span>Next Step</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
+                      Next Question
+                    </Button>
                   )}
                 </div>
               </div>

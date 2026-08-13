@@ -15,13 +15,16 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'Futuro AI | Your AI-Powered Career Intelligence Mentor',
-  description: 'Discover your ideal career path, identify skill gaps, generate custom learning roadmaps, analyze resumes, and practice mock interviews using Artificial Intelligence.',
+  title: 'Futuro AI — Your AI-Powered Career Operating System',
+  description: 'Futuro AI transforms your skills, ambition, and career goals into an intelligent, actionable roadmap with AI career navigation, resume intelligence, and mock interview coaching.',
+  icons: {
+    icon: '/favicon.ico',
+  },
   openGraph: {
-    title: 'Futuro AI - AI-Powered Career Intelligence Mentor',
-    description: 'Find your dream career path with custom AI roadmaps, ATS reviews, and mock coaching.',
+    title: 'Futuro AI — Your AI-Powered Career Operating System',
+    description: 'Personalized career roadmaps, skill gap intelligence, resume analysis, and realistic AI mock interviews.',
     type: 'website',
-  }
+  },
 };
 
 export default function RootLayout({
@@ -30,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full scroll-smooth">
-      <body className={`${inter.variable} ${outfit.variable} font-sans h-full bg-[#F8FAFC] text-slate-900 antialiased selection:bg-purple-100 selection:text-indigo-700`}>
+    <html lang="en" className="light h-full scroll-smooth">
+      <body className={`${inter.variable} ${outfit.variable} font-sans h-full bg-[#F8FAFC] text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900`}>
         <ThemeProvider>
           <AuthProvider>
             {children}

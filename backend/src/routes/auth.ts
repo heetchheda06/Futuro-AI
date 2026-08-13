@@ -207,34 +207,26 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: express.Respo
 });
 
 // @route   PUT /api/auth/profile
+// @route   PUT /api/auth/profile
 // @desc    Update user profile data
 router.put('/profile', authenticateToken, async (req: AuthRequest, res: express.Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized.' });
 
-    const { targetCareer, currentSkills, experienceLevel, education } = req.body;
-
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    if (targetCareer !== undefined) user.targetCareer = targetCareer;
-    if (currentSkills !== undefined) user.currentSkills = currentSkills;
-    if (experienceLevel !== undefined) user.experienceLevel = experienceLevel;
-    if (education !== undefined) user.education = education;
+    const updateKeys = Object.keys(req.body);
+    for (const key of updateKeys) {
+      if (key !== '_id' && key !== 'password' && key !== 'createdAt') {
+        (user as any)[key] = req.body[key];
+      }
+    }
 
     await user.save();
     return res.status(200).json({
       message: 'Profile updated successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        currentSkills: user.currentSkills,
-        targetCareer: user.targetCareer,
-        experienceLevel: user.experienceLevel,
-        education: user.education
-      }
+      user
     });
   } catch (error) {
     return res.status(500).json({ message: 'Server error updating profile.' });

@@ -10,13 +10,63 @@ export interface IUser extends Document {
   profileImage?: string;
   targetCareer?: string;
   currentSkills: string[];
+  skillsWithLevel?: {
+    name: string;
+    level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+    years?: number;
+    howLearned?: string;
+    certification?: string;
+    projects?: string[];
+  }[];
+  interests?: string[];
+  subjectsEnjoyed?: string[];
+  activitiesEnjoyed?: string[];
+  strengths?: string[];
+  areasToImprove?: string[];
+  preferredWorkType?: string[];
+  workEnvironmentPreferences?: string[];
   experienceLevel?: string;
+  location?: string;
   education?: {
     degree?: string;
     field?: string;
     school?: string;
     gradYear?: number;
   };
+  certifications?: {
+    name: string;
+    issuer: string;
+    date?: string;
+    link?: string;
+  }[];
+  projects?: {
+    name: string;
+    description: string;
+    tech: string[];
+    github?: string;
+    demo?: string;
+  }[];
+  experience?: {
+    role: string;
+    company?: string;
+    type?: string;
+    description?: string;
+  }[];
+  achievements?: {
+    title: string;
+    description?: string;
+  }[];
+  socialLinks?: {
+    linkedin?: string;
+    github?: string;
+    portfolio?: string;
+    other?: string;
+  };
+  assessmentResults?: {
+    careerTitle: string;
+    score: number;
+    reason?: string;
+  }[];
   createdAt: Date;
 }
 
@@ -29,13 +79,63 @@ const UserSchema = new Schema<IUser>({
   profileImage: { type: String },
   targetCareer: { type: String },
   currentSkills: { type: [String], default: [] },
+  skillsWithLevel: [{
+    name: String,
+    level: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert'], default: 'Intermediate' },
+    years: Number,
+    howLearned: String,
+    certification: String,
+    projects: [String]
+  }],
+  interests: { type: [String], default: [] },
+  subjectsEnjoyed: { type: [String], default: [] },
+  activitiesEnjoyed: { type: [String], default: [] },
+  strengths: { type: [String], default: [] },
+  areasToImprove: { type: [String], default: [] },
+  preferredWorkType: { type: [String], default: [] },
+  workEnvironmentPreferences: { type: [String], default: [] },
   experienceLevel: { type: String, default: 'Entry Level' },
+  location: String,
   education: {
     degree: String,
     field: String,
     school: String,
     gradYear: Number,
   },
+  certifications: [{
+    name: String,
+    issuer: String,
+    date: String,
+    link: String,
+  }],
+  projects: [{
+    name: String,
+    description: String,
+    tech: [String],
+    github: String,
+    demo: String,
+  }],
+  experience: [{
+    role: String,
+    company: String,
+    type: String,
+    description: String,
+  }],
+  achievements: [{
+    title: String,
+    description: String,
+  }],
+  socialLinks: {
+    linkedin: String,
+    github: String,
+    portfolio: String,
+    other: String,
+  },
+  assessmentResults: [{
+    careerTitle: String,
+    score: Number,
+    reason: String,
+  }],
   createdAt: { type: Date, default: Date.now },
 });
 

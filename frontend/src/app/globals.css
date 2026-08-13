@@ -1,38 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Base Light Backgrounds & Surfaces */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
   
-  /* Brand Tokens */
-  --brand-primary: #635bff;
-  --brand-primary-hover: #5146e5;
-  --brand-light: #8b5cf6;
-  --brand-cyan: #06b6d4;
-  --brand-sky: #0ea5e9;
+  --surface-ground: #F8FAFC;
+  --surface-subtle: #F1F5F9;
+  --surface-card: #FFFFFF;
+  --surface-card-hover: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-overlay: rgba(255, 255, 255, 0.95);
+
+  /* Futuro AI Brand Accents */
+  --futuro-violet: #635BFF;
+  --futuro-violet-light: #4F46E5;
+  --futuro-violet-dark: #3730A3;
+  --futuro-violet-glow: rgba(99, 91, 255, 0.12);
+  --futuro-violet-soft: #F5F3FF;
   
-  /* Surfaces */
-  --surface-pure: #ffffff;
-  --surface-secondary: #f1f5f9;
-  --surface-purple: #f5f3ff;
-  --surface-blue: #eff6ff;
-  --surface-cyan: #ecfeff;
+  --futuro-cyan: #06B6D4;
+  --futuro-cyan-light: #0284C7;
+  --futuro-cyan-glow: rgba(6, 182, 212, 0.12);
+  --futuro-cyan-soft: #F0F9FF;
   
+  --futuro-indigo: #4F46E5;
+  --futuro-emerald: #10B981;
+  --futuro-amber: #F59E0B;
+  --futuro-rose: #EF4444;
+
   /* Typography */
-  --text-primary: #0f172a;
+  --text-primary: #0F172A;
   --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-very-muted: #94a3b8;
-  
-  /* Borders */
-  --border-default: #e2e8f0;
-  --border-light: #f1f5f9;
-  --border-purple: #ddd6fe;
-  
-  /* Status */
-  --status-success: #10b981;
-  --status-warning: #f59e0b;
-  --status-error: #ef4444;
+  --text-muted: #64748B;
+  --text-dim: #94A3B8;
+
+  /* Borders & Dividers */
+  --border-subtle: #E2E8F0;
+  --border-medium: #CBD5E1;
+  --border-accent: rgba(99, 91, 255, 0.25);
+  --border-cyan: rgba(6, 182, 212, 0.25);
 }
 
 @theme inline {
@@ -40,6 +47,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-outfit: var(--font-outfit);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -51,27 +62,51 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar */
+/* Custom Futuro Light Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #F8FAFC;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #94A3B8;
 }
 
 /* Selection */
 ::selection {
-  background-color: #ddd6fe;
-  color: #5146e5;
+  background-color: rgba(99, 91, 255, 0.18);
+  color: #0F172A;
+}
+
+/* Light Glassmorphic & Elevation Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+}
+
+.glass-panel-elevated {
+  background: #FFFFFF;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
+.ambient-glow-bg {
+  position: absolute;
+  pointer-events: none;
+  filter: blur(70px);
+  border-radius: 9999px;
 }
