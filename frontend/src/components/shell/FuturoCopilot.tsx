@@ -24,7 +24,7 @@ const parseInlineFormatting = (text: string) => {
   return parts.map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={index} className="font-bold text-slate-900">
+        <strong key={index} className="font-bold text-slate-900 font-outfit">
           {part.slice(2, -2)}
         </strong>
       );
@@ -122,11 +122,15 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
     const textToSend = promptText || input;
     if (!textToSend.trim() || loading) return;
 
-    const newMsgs: Message[] = [...messages, { role: 'user', text: textToSend }];
+    const userPrompt = textToSend.trim();
+    const lower = userPrompt.toLowerCase();
+
+    const newMsgs: Message[] = [...messages, { role: 'user', text: userPrompt }];
     setMessages(newMsgs);
     setInput('');
     setLoading(true);
 
+    // 1. Try Backend API first
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -137,33 +141,98 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ message: textToSend })
+        body: JSON.stringify({ message: userPrompt })
       });
 
       if (response.ok) {
         const data = await response.json();
         const aiText = data.aiMessage?.content || data.message;
-        if (aiText) {
+        if (aiText && !aiText.includes('Futuro AI Guidance for')) {
           setMessages([...newMsgs, { role: 'ai', text: aiText }]);
           setLoading(false);
           return;
         }
       }
     } catch (err) {
-      console.warn('Backend chat API request failed, using intelligent client fallback:', err);
+      console.warn('Backend chat API offline, calling live AI fallback engine:', err);
     }
 
-    // Dynamic Intelligent Response Fallback
-    const lower = textToSend.toLowerCase().trim();
+    // 2. Try Direct Gemini REST API Query
+    const geminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+    if (geminiKey && !geminiKey.includes('DemoKey')) {
+      try {
+        const sysPrompt = `You are Futuro AI, an empathetic, highly intelligent, warm, conversational live AI Career Copilot. 
+The candidate's name is ${user?.name || 'User'} and their target career path is ${user?.targetCareer || 'Full Stack AI Engineer'}.
+Respond in natural, engaging, professional conversational prose (like ChatGPT or Gemini). 
+Answer the prompt directly and intuitively without robotic templates. Use bullet points or bold highlights where helpful.`;
+
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+        const res = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: `${sysPrompt}\n\nUser Question: ${userPrompt}\n\nFuturo AI Response:` }
+                ]
+              }
+            ]
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const liveText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (liveText && liveText.trim()) {
+            setMessages([...newMsgs, { role: 'ai', text: liveText.trim() }]);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (gemErr) {
+        console.warn('Direct Gemini API query error:', gemErr);
+      }
+    }
+
+    // 3. Conversational Live Intent Intelligence Engine
     let reply = '';
-    if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower.startsWith('hi ') || lower.startsWith('hello ')) {
-      reply = `Hello ${user?.name || 'there'}! 👋 I am Futuro AI, your personal Career Copilot. How can I assist you with your career goals today?`;
+
+    if (lower.includes('who are you') || lower.includes('what are you') || lower.includes('identity')) {
+      reply = `Hello ${user?.name || 'there'}! 👋 I am **Futuro AI**, your personal Career Intelligence Copilot. 
+
+I'm built to help you elevate your career trajectory by analyzing your skills, building ATS-compliant resumes, preparing you for technical and behavioral interviews, and generating customized project roadmaps. How can I help you take your next career step today?`;
+    } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+      reply = `Hey ${user?.name || 'there'}! 👋 How can I help you optimize your career goals or prepare for your next big opportunity today?`;
+    } else if (lower.includes('what should i learn') || lower.includes('learn') || lower.includes('skill')) {
+      reply = `Based on your target trajectory as **${user?.targetCareer || 'Full Stack AI Engineer'}**, here is what you should focus on learning right now:
+
+1. **AI & LLM Integration**: Master prompt engineering, Retrieval-Augmented Generation (RAG), and Gemini/OpenAI REST APIs.
+2. **Modern Web Stack**: Deepen Next.js App Router, TypeScript, and server-side state management.
+3. **Cloud & DevOps**: Build deployment pipelines using Docker, GitHub Actions, and cloud hosting (Render/Firebase/Vercel).
+4. **Data Structures & System Architecture**: Practice scalable database design and API rate limiting.
+
+Explore interactive roadmaps on \`/roadmap\` to track your progress step-by-step!`;
     } else if (lower.includes('resume') || lower.includes('cv')) {
-      reply = `To create an ATS-optimized resume:\n\n1. **Use Action Verbs**: Start bullets with strong impact verbs.\n2. **Quantify Metrics**: Highlight measurable outputs (e.g., "Boosted retention by 25%").\n3. **Try AI Builder**: Switch to **Build Resume** mode on the \`/resume\` page to generate & download your A4 PDF!`;
+      reply = `I can help you build an executive ATS-friendly resume! 
+
+1. **Quantify Metrics**: Focus on measurable accomplishments (e.g., "Optimized API load time by 35%").
+2. **Tailor Keywords**: Match skills to job description requirements.
+3. **Use Clean Layout**: Build and download your print-ready A4 ATS resume right here on \`/resume\`!`;
     } else if (lower.includes('interview')) {
-      reply = `For interview preparation:\n\n1. Use the **STAR Framework** (Situation, Task, Action, Result).\n2. Practice mock coding & behavioral sessions on the \`/interview-prep\` tool.\n3. Tailor your core stories to match key requirements for ${user?.targetCareer || 'your desired role'}.`;
+      reply = `To ace your technical and behavioral interviews:
+
+1. Use the **STAR Framework** (Situation, Task, Action, Result) for behavioral questions.
+2. Review system architecture patterns and core algorithms.
+3. Practice live mock sessions with real-time scoring on \`/interview-prep\`!`;
     } else {
-      reply = `Futuro AI Guidance for "${textToSend}":\n\n1. **Career Alignment**: Tailored specifically for your trajectory as ${user?.targetCareer || 'Full Stack AI Engineer'}.\n2. **Recommended Action**: Deepen hands-on practice, generate projects on \`/ai-tools/project-generator\`, and review target skill benchmarks.`;
+      reply = `I understand you're asking about "${userPrompt}". 
+
+To help you achieve your goal as a **${user?.targetCareer || 'Full Stack AI Engineer'}**, I recommend breaking this down into three actionable steps:
+
+1. **Core Practice**: Strengthen your hands-on coding and system implementation.
+2. **Project Portfolio**: Build functional AI-powered web applications on \`/ai-tools/project-generator\`.
+3. **Interview Preparation**: Practice mock scenarios on \`/interview-prep\` to sharpen your technical articulation.`;
     }
 
     setMessages([...newMsgs, { role: 'ai', text: reply }]);
