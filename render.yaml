@@ -19,4 +19,4 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
-        value: mock-google-client-id.apps.googleusercontent.com
+        value: 9949998046-54secmerttj8cn7mr4pq43gndcq9h76r.apps.googleusercontent.com
