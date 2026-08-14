@@ -214,10 +214,15 @@ const initialJobs = [
 
 export async function connectDB() {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/futuro-ai';
+  const isAtlas = uri.includes('mongodb+srv://') || uri.includes('mongodb.net');
+
   try {
     mongoose.set('strictQuery', true);
-    await mongoose.connect(uri);
-    console.log('MongoDB Connected Successfully.');
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 45000,
+    });
+    console.log(`Connected successfully to ${isAtlas ? 'MongoDB Atlas Cloud Database (Global)' : 'Local MongoDB'}.`);
 
     // Seed careers if empty
     const careerCount = await Career.countDocuments();
@@ -234,6 +239,6 @@ export async function connectDB() {
     }
   } catch (error) {
     console.error('MongoDB Connection Failure:', error);
-    console.log('WARNING: Express server will run with mock file storage and runtime in-memory caching to allow testing.');
+    console.log('WARNING: Express server running with graceful in-memory fallback if database connectivity drops.');
   }
 }

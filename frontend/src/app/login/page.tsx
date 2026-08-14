@@ -6,11 +6,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import { Mail, Lock, Sparkles, ArrowRight, ShieldAlert, Bot } from 'lucide-react';
+import { Mail, Lock, Sparkles, ArrowRight, ShieldAlert } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 
 function LoginContent() {
-  const { login, googleLogin } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || 'dashboard';
@@ -31,23 +31,6 @@ function LoginContent() {
     } catch (err: any) {
       setError(err.message || 'Invalid email or password. Please check your credentials.');
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoSignIn = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await googleLogin(
-        'demo.user@futuro.ai',
-        'Demo User',
-        'google-demo-id-12345',
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'
-      );
-      router.push(`/${redirect}`);
-    } catch (err: any) {
-      setError('Quick Demo Sign-In failed.');
       setLoading(false);
     }
   };
@@ -75,24 +58,6 @@ function LoginContent() {
           <span>{error}</span>
         </div>
       )}
-
-      {/* Demo Sign-In Button */}
-      <button
-        onClick={handleDemoSignIn}
-        type="button"
-        disabled={loading}
-        className="w-full mb-6 py-2.5 px-4 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
-      >
-        <Bot className="w-4 h-4 text-indigo-600" />
-        <span>1-Click Quick Demo Sign-In (Instant Profile)</span>
-      </button>
-
-      <div className="relative flex items-center justify-center mb-6">
-        <div className="border-t border-slate-200 w-full" />
-        <span className="bg-white px-3 text-[10px] text-slate-400 uppercase font-bold tracking-wider absolute">
-          Or sign in with email
-        </span>
-      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

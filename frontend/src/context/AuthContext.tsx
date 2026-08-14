@@ -144,6 +144,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (response.ok) {
             const userData = await response.json();
             setUser(userData);
+            fetch(`${API_BASE_URL}/calendar/log-visit`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${savedToken}` }
+            }).catch(() => {});
           } else if (fallbackUser) {
             setUser(fallbackUser);
           } else {

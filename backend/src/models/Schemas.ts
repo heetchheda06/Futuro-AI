@@ -549,6 +549,35 @@ const ProjectBlueprintSchema = new Schema<IProjectBlueprint>({
   createdAt: { type: Date, default: Date.now }
 });
 
+// --- ACTIVITY LOG SCHEMA (FOR AI CALENDAR & STREAK TRACKING) ---
+export interface IActivityLog extends Document {
+  userId: mongoose.Types.ObjectId;
+  date: string; // YYYY-MM-DD
+  visited: boolean;
+  activities: {
+    type: 'Learning' | 'Interview' | 'Resume' | 'Assessment' | 'Study' | 'Coding' | 'System';
+    title: string;
+    time: string;
+    description?: string;
+  }[];
+  notes?: string;
+  createdAt: Date;
+}
+
+const ActivityLogSchema = new Schema<IActivityLog>({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  date: { type: String, required: true },
+  visited: { type: Boolean, default: true },
+  activities: [{
+    type: { type: String, required: true },
+    title: { type: String, required: true },
+    time: { type: String, required: true },
+    description: String,
+  }],
+  notes: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
 // --- EXPORTS ---
 export const User = mongoose.model<IUser>('User', UserSchema);
 export const Career = mongoose.model<ICareer>('Career', CareerSchema);
@@ -563,5 +592,6 @@ export const EbookBookmark = mongoose.model<IEbookBookmark>('EbookBookmark', Ebo
 export const CalendarEvent = mongoose.model<ICalendarEvent>('CalendarEvent', CalendarEventSchema);
 export const CertificationProgress = mongoose.model<ICertificationProgress>('CertificationProgress', CertificationProgressSchema);
 export const ProjectBlueprint = mongoose.model<IProjectBlueprint>('ProjectBlueprint', ProjectBlueprintSchema);
+export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', ActivityLogSchema);
 
 

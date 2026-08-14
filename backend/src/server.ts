@@ -112,6 +112,17 @@ app.get('/api/admin/analytics', async (req, res) => {
   }
 });
 
+// Admin dataset clear endpoint
+app.post('/api/admin/clear-dataset', async (req, res) => {
+  try {
+    const { clearAllUserData } = await import('./scripts/clearDataset');
+    const summary = await clearAllUserData();
+    res.json({ status: 'success', message: 'Dataset cleared successfully.', summary });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message || 'Failed to clear dataset.' });
+  }
+});
+
 // Handle unknown API endpoints
 app.use((req, res) => {
   res.status(404).json({ message: 'API Route not found.' });

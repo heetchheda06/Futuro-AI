@@ -1,5 +1,5 @@
 import express from 'express';
-import { CalendarEvent } from '../models/Schemas';
+import { CalendarEvent, ActivityLog } from '../models/Schemas';
 import { authMiddleware } from '../middleware/auth';
 import { AIService } from '../services/aiService';
 
@@ -225,6 +225,188 @@ router.post('/suggest-schedule', async (req, res) => {
     res.json({ suggestion });
   } catch (error) {
     res.status(500).json({ message: 'Error generating study schedule' });
+  }
+});
+
+/**
+ * GET /api/calendar/activity-logs
+ * Fetch all activity logs and website visit history for current user
+ */
+router.get('/activity-logs', authMiddleware, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const logs = await ActivityLog.find({ userId }).sort({ date: 1 });
+
+    // Build map of logged dates YYYY-MM-DD
+    const logsMap: Record<string, any> = {};
+    logs.forEach((log) => {
+      logsMap[log.date] = {
+        date: log.date,
+        visited: log.visited,
+        activities: log.activities || [],
+        notes: log.notes
+      };
+    });
+
+    // Calculate streaks and telemetry
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    let currentStreak = 0;
+    let tempDate = new Date(today);
+
+    // Calculate consecutive active days leading up to today
+    while (true) {
+      const dStr = tempDate.toISOString().split('T')[0];
+      if (logsMap[dStr] && logsMap[dStr].visited) {
+        currentStreak++;
+        tempDate.setDate(tempDate.getDate() - 1);
+      } else {
+        // Allow missing today if it's earlier in the day
+        if (dStr === todayStr && currentStreak === 0) {
+          tempDate.setDate(tempDate.getDate() - 1);
+          continue;
+        }
+        break;
+      }
+    }
+
+    const totalActiveDays = Object.values(logsMap).filter((l: any) => l.visited).length;
+
+    res.json({
+      logs: logsMap,
+      currentStreak,
+      totalActiveDays,
+      todayStr
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving activity logs' });
+  }
+});
+
+/**
+ * POST /api/calendar/log-visit
+ * Automatically record today's website visit in database
+ */
+router.post('/log-visit', authMiddleware, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const todayStr = req.body.date || new Date().toISOString().split('T')[0];
+    const nowTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let log = await ActivityLog.findOne({ userId, date: todayStr });
+
+    if (!log) {
+      log = new ActivityLog({
+        userId,
+        date: todayStr,
+        visited: true,
+        activities: [
+          {
+            type: 'System',
+            title: 'Logged into Futuro AI Career Platform',
+            time: nowTimeStr,
+            description: 'Daily career telemetry session initiated.'
+          }
+        ]
+      });
+      await log.save();
+    } else {
+      log.visited = true;
+      // Add visit activity if not already recorded today
+      const hasVisit = log.activities.some(a => a.type === 'System');
+      if (!hasVisit) {
+        log.activities.push({
+          type: 'System',
+          title: 'Visited Futuro AI Platform',
+          time: nowTimeStr,
+          description: 'Continued active career study streak.'
+        });
+      }
+      await log.save();
+    }
+
+    res.json({ message: 'Visit logged successfully', log });
+  } catch (error) {
+    res.status(500).json({ message: 'Error logging website visit' });
+  }
+});
+
+/**
+ * POST /api/calendar/activity-logs
+ * Record a specific learning activity for a date
+ */
+router.post('/activity-logs', authMiddleware, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { date, type, title, time, description, notes } = req.body;
+
+    const dateStr = date || new Date().toISOString().split('T')[0];
+    const timeStr = time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let log = await ActivityLog.findOne({ userId, date: dateStr });
+
+    if (!log) {
+      log = new ActivityLog({
+        userId,
+        date: dateStr,
+        visited: true,
+        activities: [
+          {
+            type: type || 'Learning',
+            title: title || 'Learning Session',
+            time: timeStr,
+            description
+          }
+        ],
+        notes
+      });
+    } else {
+      log.visited = true;
+      log.activities.push({
+        type: type || 'Learning',
+        title: title || 'Learning Session',
+        time: timeStr,
+        description
+      });
+      if (notes) log.notes = notes;
+    }
+
+    await log.save();
+    res.status(201).json({ message: 'Learning activity recorded', log });
+  } catch (error) {
+    res.status(500).json({ message: 'Error recording learning activity' });
+  }
+});
+
+/**
+ * POST /api/calendar/generate-catchup
+ * Generate an AI catch-up plan for missed website/study dates
+ */
+router.post('/generate-catchup', authMiddleware, async (req: any, res) => {
+  try {
+    const { missedDates, targetCareer } = req.body;
+    const dates: string[] = missedDates || [];
+    const career = targetCareer || 'Full Stack Engineer';
+
+    const plan = dates.map((d, index) => ({
+      date: d,
+      focusTopic: `Accelerated ${career} Revision Block #${index + 1}`,
+      durationMinutes: 45,
+      tasks: [
+        `Review key concepts missed on ${d}`,
+        `Complete 1 hands-on drill in AI Cockpit or Skill Gap Analyzer`,
+        `Log completed learning entry into AI Calendar`
+      ]
+    }));
+
+    res.json({
+      message: 'AI Catch-Up Plan Generated',
+      totalMissedDays: dates.length,
+      plan
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating catch-up plan' });
   }
 });
 

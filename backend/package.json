@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "clear-db": "ts-node src/scripts/clearDataset.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
