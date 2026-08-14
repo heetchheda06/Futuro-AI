@@ -548,11 +548,11 @@ Return JSON: {"enhanced": "...", "impact": "+XX% Metric Impact"}`;
   /**
    * AI Chatbot Responder
    */
-  static async getChatResponse(chatHistory: { role: 'user' | 'assistant'; content: string }[], currentMessage: string) {
+  static async getChatResponse(chatHistory: { role: string; content: string }[], currentMessage: string) {
     const historyPrompt = chatHistory.map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n');
     const apiPrompt = `
-      You are Futuro AI, an intelligent, inspiring, and professional career mentor.
-      Answering questions about careers, jobs, skills, certifications, resume formatting, and roadmaps.
+      You are Futuro AI, an empathetic, highly intelligent AI Career Copilot and executive career strategist.
+      Answering questions about careers, jobs, skills, certifications, resume formatting, system architecture, and roadmaps.
       Provide concise, highly actionable advice with markdown highlights.
 
       Chat History:
@@ -565,17 +565,21 @@ Return JSON: {"enhanced": "...", "impact": "+XX% Metric Impact"}`;
     if (this.getGeminiKey()) {
       try {
         const response = await this.queryGemini(apiPrompt, false);
-        return response;
+        if (response && response.trim()) return response.trim();
       } catch (e) { /* fallback */ }
     } else if (this.getOpenAIKey()) {
       try {
         const response = await this.queryOpenAI(apiPrompt, false);
-        return response;
+        if (response && response.trim()) return response.trim();
       } catch (e) { /* fallback */ }
     }
 
-    // Mock chatbot logic
-    const lower = currentMessage.toLowerCase();
+    // Dynamic chatbot fallback logic
+    const lower = currentMessage.toLowerCase().trim();
+
+    if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower.startsWith('hi ') || lower.startsWith('hello ')) {
+      return `Hello! 👋 I am **Futuro AI**, your personal Career Copilot. How can I help optimize your career trajectory, analyze your skills, or prepare you for interviews today?`;
+    }
     
     if (lower.includes('software') || lower.includes('developer') || lower.includes('programmer')) {
       return `### How to Become a Software Engineer\n\nSoftware engineering is an excellent career choice. Here is the typical learning path:\n1. **Learn a core language**: JavaScript/TypeScript or Python.\n2. **Understand databases**: Master relational databases (SQL) and NoSQL (MongoDB).\n3. **Learn Web Frameworks**: React for Frontend, Express/Node.js for Backend.\n4. **Work on Projects**: Build 2-3 functional web sites and host them on GitHub.\n\n*Would you like to build a personalized roadmap or analyze your current skills for this role?*`;
@@ -586,21 +590,18 @@ Return JSON: {"enhanced": "...", "impact": "+XX% Metric Impact"}`;
     }
 
     if (lower.includes('resume') || lower.includes('ats')) {
-      return `### Resume/ATS Guidelines\n\nTo pass Application Tracking Systems (ATS):\n- **Use a simple, clean layout**: Single column layouts parse best. Avoid complex side-by-side structures.\n- **Integrate keywords**: Look at job descriptions and naturally weave required skills into your text.\n- **Quantify details**: Write sentences like: *"Maintained React app, reducing query load by 20%"* rather than *"Worked on React"*.\n\n*Upload your current resume in our **Resume Analyzer** tab to receive a comprehensive ATS evaluation!*`;
+      return `### Resume/ATS Guidelines\n\nTo pass Application Tracking Systems (ATS):\n- **Use a simple, clean layout**: Single column layouts parse best. Avoid complex side-by-side structures.\n- **Integrate keywords**: Look at job descriptions and naturally weave required skills into your text.\n- **Quantify details**: Write sentences like: *"Maintained React app, reducing query load by 20%"* rather than *"Worked on React"*.\n\n*Build and export print-ready A4 ATS resumes right here in our **AI Resume Builder** tool on the \`/resume\` page!*`;
     }
 
     if (lower.includes('interview') || lower.includes('practice')) {
-      return `### Preparing for Interviews\n\nWe offer an interactive **AI Interview Coach** tailored for HR, Technical, and Behavioral sessions. Focus on:\n- **STAR framework** (Situation, Task, Action, Result) for behavioral prompts.\n- **Data structures and system patterns** for tech coding reviews.\n- **Clear articulation and confidence metrics**.\n\n*Go to the Interview Coach dashboard to start a mock session!*`;
+      return `### Preparing for Interviews\n\nWe offer an interactive **AI Interview Coach** tailored for HR, Technical, and Behavioral sessions. Focus on:\n- **STAR framework** (Situation, Task, Action, Result) for behavioral prompts.\n- **Data structures and system patterns** for tech coding reviews.\n- **Clear articulation and confidence metrics**.\n\n*Go to the Interview Coach dashboard on \`/interview-prep\` to start a live mock session!*`;
     }
 
-    return `Hello! I'm **Futuro AI**, your personal career mentor. I can help you:
-- Explore trending professions (e.g. Data Scientist, UI/UX Designer)
-- Map out personalized training roadmaps
-- Analyze skills gaps to get hired
-- Grade your resume against ATS tracking algorithms
-- Simulate HR and Technical interviews
+    return `Hello! I'm **Futuro AI**, your personal career mentor. I evaluated your prompt regarding "${currentMessage}":
 
-*What career queries can I assist you with today?*`;
+- **Professional Path**: Tailored for software, AI engineering, and tech leadership
+- **Skills & Certification**: Focus on core system design, cloud architecture, and modern frameworks
+- **Next Step**: Build customized learning roadmaps on \`/roadmap\` or generate portfolio projects on \`/ai-tools/project-generator\`!`;
   }
 
   /**
@@ -1635,52 +1636,6 @@ Return JSON: {"enhanced": "...", "impact": "+XX% Metric Impact"}`;
     }
 
     return `Keep pushing forward! Your technical skill is at ${state.stats.technical}% and leadership is at ${state.stats.leadership}%. Focus on taking balanced decisions to secure your next promotion to the next tier.`;
-  }
-
-  /**
-   * AI Chat response for Futuro Copilot chatbot
-   */
-  static async getChatResponse(history: { role: string; content: string }[], userMessage: string, targetCareer?: string): Promise<string> {
-    const key = this.getGeminiKey();
-    const systemPrompt = `You are Futuro AI, an empathetic, highly intelligent AI Career Copilot and executive career strategist. 
-The user is aiming for or currently building a career as: ${targetCareer || 'Technology & Innovation Professional'}.
-Provide concise, highly actionable, encouraging, and tailored career guidance. Format your output using clear markdown formatting, bullet points, and actionable next steps.`;
-
-    const formattedHistory = history.map(h => `${h.role === 'user' ? 'User' : 'Futuro AI'}: ${h.content}`).join('\n');
-    const fullPrompt = `${systemPrompt}\n\nChat History:\n${formattedHistory}\n\nUser Question: ${userMessage}\n\nFuturo AI Answer:`;
-
-    if (key) {
-      try {
-        const responseText = await this.queryGemini(fullPrompt, false);
-        if (responseText && responseText.trim()) return responseText.trim();
-      } catch (err) {
-        console.warn('Gemini chat query failed, trying OpenAI or smart fallback:', err);
-      }
-    }
-
-    const openAiKey = this.getOpenAIKey();
-    if (openAiKey) {
-      try {
-        const responseText = await this.queryOpenAI(fullPrompt, false);
-        if (responseText && responseText.trim()) return responseText.trim();
-      } catch (err) {
-        console.warn('OpenAI chat query failed:', err);
-      }
-    }
-
-    // Dynamic intelligent fallback based on user's query if API keys are pending
-    const lower = userMessage.toLowerCase().trim();
-    if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower.startsWith('hi ') || lower.startsWith('hello ')) {
-      return `Hello! 👋 I am Futuro AI, your personal Career Intelligence Copilot. How can I help optimize your career trajectory, analyze your skills, or prepare you for interviews today?`;
-    }
-    if (lower.includes('resume') || lower.includes('cv')) {
-      return `To optimize your resume for ATS screening:\n\n1. **Quantify Achievements**: Use metrics (e.g., "Increased server speed by 40%").\n2. **Tailor Keywords**: Align your skills directly with job description requirements.\n3. **Use Clean Formatting**: You can build and export print-ready A4 ATS resumes right here in our **AI Resume Builder** tool on the \`/resume\` page!`;
-    }
-    if (lower.includes('interview') || lower.includes('prep')) {
-      return `For technical and behavioral interview preparation:\n\n1. **STAR Method**: Structure answers as Situation, Task, Action, and Result.\n2. **Core Fundamentals**: Practice system design and data structures in our **AI Interviewer** module.\n3. **Mock Sessions**: Launch a live mock interview session on \`/interview-prep\` to receive real-time score feedback!`;
-    }
-
-    return `I evaluated your question regarding "${userMessage}":\n\n1. **Target Alignment**: Tailored for your path as ${targetCareer || 'Full Stack AI Engineer'}.\n2. **Key Skills to Focus On**: Deepen your hands-on mastery of system architecture, cloud deployment, and AI API integrations.\n3. **Recommended Action Step**: Explore customized learning roadmaps on \`/roadmap\` or generate practice projects on \`/ai-tools/project-generator\`!`;
   }
 }
 
