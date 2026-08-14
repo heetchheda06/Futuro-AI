@@ -165,8 +165,12 @@ export function TopBar({
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center space-x-2 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-              {user?.name ? user.name.charAt(0) : 'H'}
+            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs overflow-hidden shrink-0">
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt={user.name || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                user?.name ? user.name.charAt(0).toUpperCase() : 'U'
+              )}
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
           </button>

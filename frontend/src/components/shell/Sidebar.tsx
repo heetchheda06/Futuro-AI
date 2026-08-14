@@ -203,8 +203,12 @@ export function Sidebar() {
       {!isCollapsed && (
         <div className="p-3 border-t border-slate-200 bg-slate-50/50">
           <Link href="/profile" className="flex items-center space-x-2.5 p-2 rounded-xl hover:bg-white transition-colors">
-            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs overflow-hidden shrink-0">
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt={user.name || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                user?.name ? user.name.charAt(0).toUpperCase() : 'U'
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-slate-900 truncate block">{user?.name || 'User'}</span>

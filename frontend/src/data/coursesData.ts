@@ -1,7 +1,7 @@
 export interface CourseData {
   id: string;
   title: string;
-  provider: 'Udemy' | 'Coursera' | 'NPTEL' | 'Skillshare' | 'LinkedIn Learning' | 'edX' | 'Pluralsight' | 'Udacity' | 'DeepLearning.AI' | 'Google' | 'Harvard CS50' | 'Codecademy';
+  provider: 'Udemy' | 'Coursera' | 'NPTEL' | 'Skillshare' | 'LinkedIn Learning' | 'edX' | 'Pluralsight' | 'Udacity' | 'DeepLearning.AI' | 'Google' | 'Google Cloud Skills' | 'Harvard CS50' | 'Codecademy';
   category: 'AI & Machine Learning' | 'Web & Mobile Dev' | 'Data Science & Analytics' | 'Cloud & DevOps' | 'Cybersecurity' | 'UI/UX & Design' | 'Business & Product' | 'Software Engineering';
   match: number;
   why: string;

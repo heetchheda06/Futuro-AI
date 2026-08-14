@@ -143,7 +143,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (response.ok) {
             const userData = await response.json();
-            setUser(userData);
+            const normalized = { ...userData, id: userData.id || userData._id };
+            setUser(normalized);
+            localStorage.setItem('offline_user', JSON.stringify(normalized));
             fetch(`${API_BASE_URL}/calendar/log-visit`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${savedToken}` }
@@ -177,10 +179,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, password })
       });
 
+      const normalizedUser = { ...data.user, id: data.user.id || data.user._id };
       localStorage.setItem('token', data.token);
-      localStorage.setItem('offline_user', JSON.stringify(data.user));
+      localStorage.setItem('offline_user', JSON.stringify(normalizedUser));
       setToken(data.token);
-      setUser(data.user);
+      setUser(normalizedUser);
       router.push('/dashboard');
     } catch (error) {
       console.warn('Backend API login failed, activating instant session mode.', error);
@@ -227,10 +230,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ name, email, password, role })
       });
 
+      const normalizedUser = { ...data.user, id: data.user.id || data.user._id };
       localStorage.setItem('token', data.token);
-      localStorage.setItem('offline_user', JSON.stringify(data.user));
+      localStorage.setItem('offline_user', JSON.stringify(normalizedUser));
       setToken(data.token);
-      setUser(data.user);
+      setUser(normalizedUser);
       router.push('/onboarding');
     } catch (error) {
       console.warn('Backend API registration failed, activating instant session mode.', error);
@@ -259,29 +263,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, name, googleId, imageUrl })
       });
 
+      const normalizedUser = { ...data.user, id: data.user.id || data.user._id };
       localStorage.setItem('token', data.token);
-      localStorage.setItem('offline_user', JSON.stringify(data.user));
+      localStorage.setItem('offline_user', JSON.stringify(normalizedUser));
       setToken(data.token);
-      setUser(data.user);
-      router.push('/dashboard');
+      setUser(normalizedUser);
+
+      const hasCompletedOnboarding =
+        (normalizedUser.education && (normalizedUser.education.degree || normalizedUser.education.school)) ||
+        (normalizedUser.interests && normalizedUser.interests.length > 0);
+
+      if (!hasCompletedOnboarding) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.warn('Google Auth API failed, activating instant session mode.', error);
       const fallbackToken = 'google_token_' + Date.now();
-      const fallbackUser: UserType = {
-        id: googleId || 'usr_google_' + Date.now(),
-        name: name || 'Google User',
-        email: email || 'user@example.com',
-        role: 'student',
-        profileImage: imageUrl,
-        currentSkills: ['JavaScript', 'React'],
-        targetCareer: 'Full Stack AI Engineer'
-      };
+      const localUserStr = localStorage.getItem('offline_user');
+      let fallbackUser: UserType;
+
+      if (localUserStr) {
+        try {
+          fallbackUser = JSON.parse(localUserStr);
+          if (email) fallbackUser.email = email;
+          if (name) fallbackUser.name = name;
+          if (imageUrl) fallbackUser.profileImage = imageUrl;
+        } catch {
+          fallbackUser = {
+            id: googleId || 'usr_google_' + Date.now(),
+            name: name || 'Google User',
+            email: email || 'user@example.com',
+            role: 'student',
+            profileImage: imageUrl,
+            currentSkills: ['JavaScript', 'React'],
+            targetCareer: 'Full Stack AI Engineer'
+          };
+        }
+      } else {
+        fallbackUser = {
+          id: googleId || 'usr_google_' + Date.now(),
+          name: name || 'Google User',
+          email: email || 'user@example.com',
+          role: 'student',
+          profileImage: imageUrl,
+          currentSkills: ['JavaScript', 'React'],
+          targetCareer: 'Full Stack AI Engineer'
+        };
+      }
 
       localStorage.setItem('token', fallbackToken);
       localStorage.setItem('offline_user', JSON.stringify(fallbackUser));
       setToken(fallbackToken);
       setUser(fallbackUser);
-      router.push('/dashboard');
+
+      const hasCompletedOnboarding =
+        (fallbackUser.education && (fallbackUser.education.degree || fallbackUser.education.school)) ||
+        (fallbackUser.interests && fallbackUser.interests.length > 0);
+
+      if (!hasCompletedOnboarding) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
     }
   };
 
@@ -296,6 +341,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (profileData: Partial<UserType>) => {
     const updated = { ...(user || { id: 'usr_1', name: 'User', email: 'user@example.com', role: 'student' as const, currentSkills: [] }), ...profileData };
+    if (!updated.id && (updated as any)._id) {
+      updated.id = (updated as any)._id;
+    }
     setUser(updated);
     localStorage.setItem('offline_user', JSON.stringify(updated));
 
@@ -305,8 +353,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(profileData)
       });
       if (data.user) {
-        setUser(data.user);
-        localStorage.setItem('offline_user', JSON.stringify(data.user));
+        const normalized = { ...data.user, id: data.user.id || data.user._id };
+        setUser(normalized);
+        localStorage.setItem('offline_user', JSON.stringify(normalized));
       }
     } catch (error) {
       console.warn('API Profile update failed. Saved changes locally.', error);
@@ -344,8 +393,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = async () => {
     try {
       const userData = await fetchWithAuth('/auth/me');
-      setUser(userData);
-      localStorage.setItem('offline_user', JSON.stringify(userData));
+      const normalized = { ...userData, id: userData.id || userData._id };
+      setUser(normalized);
+      localStorage.setItem('offline_user', JSON.stringify(normalized));
     } catch (error) {
       console.error('Failed to refresh user profile data.', error);
     }

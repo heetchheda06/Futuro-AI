@@ -5,6 +5,13 @@ import { generateToken, authenticateToken, AuthRequest } from '../middleware/aut
 
 const router: Router = express.Router();
 
+const formatUserObj = (userDoc: any) => {
+  const obj = userDoc.toObject ? userDoc.toObject() : { ...userDoc };
+  delete obj.password;
+  obj.id = obj._id ? obj._id.toString() : obj.id;
+  return obj;
+};
+
 // @route   POST /api/auth/register
 // @desc    Register a new user
 router.post('/register', async (req: express.Request, res: express.Response) => {
@@ -41,13 +48,7 @@ router.post('/register', async (req: express.Request, res: express.Response) => 
 
     return res.status(201).json({
       token,
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        currentSkills: newUser.currentSkills
-      }
+      user: formatUserObj(newUser)
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -84,16 +85,7 @@ router.post('/login', async (req: express.Request, res: express.Response) => {
 
     return res.status(200).json({
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        currentSkills: user.currentSkills,
-        targetCareer: user.targetCareer,
-        experienceLevel: user.experienceLevel,
-        education: user.education
-      }
+      user: formatUserObj(user)
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -124,27 +116,26 @@ router.post('/google', async (req: express.Request, res: express.Response) => {
         currentSkills: []
       });
       await user.save();
-    } else if (!user.googleId) {
-      // Associate Google ID if local account existed
-      user.googleId = googleId;
-      if (imageUrl && !user.profileImage) user.profileImage = imageUrl;
-      await user.save();
+    } else {
+      let needsSave = false;
+      if (!user.googleId) {
+        user.googleId = googleId;
+        needsSave = true;
+      }
+      if (imageUrl && !user.profileImage) {
+        user.profileImage = imageUrl;
+        needsSave = true;
+      }
+      if (needsSave) {
+        await user.save();
+      }
     }
 
     const token = generateToken({ id: user._id.toString(), role: user.role, email: user.email });
 
     return res.status(200).json({
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        currentSkills: user.currentSkills,
-        targetCareer: user.targetCareer,
-        experienceLevel: user.experienceLevel,
-        profileImage: user.profileImage
-      }
+      user: formatUserObj(user)
     });
   } catch (error) {
     console.error('Google Auth error:', error);
@@ -200,13 +191,12 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: express.Respo
       return res.status(404).json({ message: 'User profile not found.' });
     }
 
-    return res.status(200).json(user);
+    return res.status(200).json(formatUserObj(user));
   } catch (error) {
     return res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// @route   PUT /api/auth/profile
 // @route   PUT /api/auth/profile
 // @desc    Update user profile data
 router.put('/profile', authenticateToken, async (req: AuthRequest, res: express.Response) => {
@@ -226,7 +216,7 @@ router.put('/profile', authenticateToken, async (req: AuthRequest, res: express.
     await user.save();
     return res.status(200).json({
       message: 'Profile updated successfully',
-      user
+      user: formatUserObj(user)
     });
   } catch (error) {
     return res.status(500).json({ message: 'Server error updating profile.' });

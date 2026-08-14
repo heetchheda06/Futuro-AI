@@ -109,8 +109,12 @@ export default function ProfilePage() {
         <Card variant="elevated" className="p-6 sm:p-8 bg-white border-slate-200 shadow-sm rounded-3xl relative overflow-hidden">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex items-center space-x-5">
-              <div className="w-20 h-20 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-3xl shadow-lg shadow-indigo-500/20">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              <div className="w-20 h-20 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-3xl shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
+                {user?.profileImage ? (
+                  <img src={user.profileImage} alt={user.name || 'User'} className="w-full h-full object-cover" />
+                ) : (
+                  user?.name ? user.name.charAt(0).toUpperCase() : 'U'
+                )}
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-outfit tracking-tight">
