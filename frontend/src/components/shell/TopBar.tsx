@@ -130,7 +130,15 @@ export function TopBar({
                 <span>+ Schedule Study Event</span>
               </Link>
               <Link
-                href="/resume"
+                href="/resume?mode=builder"
+                onClick={() => setShowQuickAdd(false)}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              >
+                <FileText className="w-4 h-4 text-indigo-600" />
+                <span>+ Build Resume AI</span>
+              </Link>
+              <Link
+                href="/resume?mode=analyze"
                 onClick={() => setShowQuickAdd(false)}
                 className="flex items-center space-x-2 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900"
               >

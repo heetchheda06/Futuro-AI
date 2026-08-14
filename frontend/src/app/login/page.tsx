@@ -8,6 +8,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { Mail, Lock, Sparkles, ArrowRight, ShieldAlert } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { GoogleAuthButton } from '../../components/auth/GoogleAuthButton';
 
 function LoginContent() {
   const { login } = useAuth();
@@ -40,7 +41,7 @@ function LoginContent() {
       {/* Top Accent Gradient */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600" />
 
-      <div className="text-center mb-8 pt-2">
+      <div className="text-center mb-6 pt-2">
         <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 mx-auto mb-3 shadow-2xs">
           <Sparkles className="w-6 h-6" />
         </div>
@@ -58,6 +59,19 @@ function LoginContent() {
           <span>{error}</span>
         </div>
       )}
+
+      {/* Google Authentication via Firebase */}
+      <div className="space-y-4 mb-5">
+        <GoogleAuthButton mode="login" onError={(err) => setError(err)} />
+        
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-slate-200 w-full" />
+          <span className="bg-white px-3 text-[10px] uppercase font-bold text-slate-400 shrink-0">
+            or continue with email
+          </span>
+          <div className="border-t border-slate-200 w-full" />
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

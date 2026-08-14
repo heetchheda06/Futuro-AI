@@ -157,6 +157,42 @@ router.post('/analyze-text', async (req: Request, res: Response) => {
   }
 });
 
+// @route   POST /api/resumes/generate-summary
+// @desc    Generate AI professional summary for builder
+router.post('/generate-summary', async (req: Request, res: Response) => {
+  try {
+    const { name, targetCareer, skills, experienceContext } = req.body;
+    const user = await getOptionalUser(req);
+    const candidateName = name || user?.name || 'Candidate';
+    const career = targetCareer || user?.targetCareer || 'Full Stack Software Engineer';
+
+    const summary = await AIService.generateSummary(candidateName, career, skills, experienceContext);
+    return res.status(200).json({ summary });
+  } catch (error: any) {
+    console.error('Generate summary error:', error);
+    return res.status(500).json({ message: 'Server error generating summary.' });
+  }
+});
+
+// @route   POST /api/resumes/enhance-bullet
+// @desc    Enhance draft bullet point using AI for builder
+router.post('/enhance-bullet', async (req: Request, res: Response) => {
+  try {
+    const { bullet, targetCareer } = req.body;
+    if (!bullet || typeof bullet !== 'string') {
+      return res.status(400).json({ message: 'Please provide a valid bullet point string.' });
+    }
+    const user = await getOptionalUser(req);
+    const career = targetCareer || user?.targetCareer || 'Full Stack Software Engineer';
+
+    const result = await AIService.enhanceBulletPoint(bullet, career);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Enhance bullet error:', error);
+    return res.status(500).json({ message: 'Server error enhancing bullet point.' });
+  }
+});
+
 // @route   GET /api/resumes/history
 // @desc    Get all resume reports for current user
 router.get('/history', async (req: Request, res: Response) => {

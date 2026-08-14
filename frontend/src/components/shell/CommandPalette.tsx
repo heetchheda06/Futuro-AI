@@ -44,7 +44,8 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const actions = [
     { label: 'Navigate to AI Career Hub', href: '/ai-career-hub', category: 'AI Tools', icon: Sparkles },
     { label: 'Launch AI Mock Interview Cockpit', href: '/ai-interviewer', category: 'AI Tools', icon: MessageSquare },
-    { label: 'Scan Resume for ATS Score', href: '/resume', category: 'AI Tools', icon: FileText },
+    { label: 'Build ATS-Compliant Resume with AI', href: '/resume?mode=builder', category: 'AI Tools', icon: FileText },
+    { label: 'Scan Resume for ATS Score', href: '/resume?mode=analyze', category: 'AI Tools', icon: FileText },
     { label: 'Explore Skill & Career Network Graph', href: '/career-graph', category: 'Career', icon: Compass },
     { label: 'View 90-Day Milestone Roadmap', href: '/roadmap', category: 'Career', icon: Compass },
     { label: 'Browse Courses Marketplace', href: '/courses', category: 'Learning', icon: GraduationCap },
