@@ -1,72 +1,153 @@
-# Futuro AI — Intelligent Career, Learning & Productivity Platform
+# 🚀 Futuro AI — Intelligent Career, Learning & Productivity Ecosystem
 
-**Futuro AI** is an AI-powered career intelligence, learning discovery, and productivity ecosystem built with **Next.js App Router, React 19, TypeScript, Tailwind CSS v4, Express, and Gemini AI**.
+[![Live Demo](https://img.shields.io/badge/Live_Demo-futuro--ai--8ef47.web.app-4F46E5?style=for-the-badge&logo=firebase)](https://futuro-ai-8ef47.web.app)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Futuro--AI-181717?style=for-the-badge&logo=github)](https://github.com/heetchheda06/Futuro-AI)
+[![Backend API](https://img.shields.io/badge/Backend_API-Render-46E3B7?style=for-the-badge&logo=render)](https://futuro-ai-backend.onrender.com)
+
+**Futuro AI** is a next-generation, AI-driven career guidance, skill analytics, learning discovery, and job preparation ecosystem. Built with **Next.js App Router, React 19, TypeScript, Tailwind CSS, Node.js Express, Firebase Authentication, and Google Gemini AI**, Futuro AI empowers students and professionals to discover target career trajectories, generate ATS-compliant resumes, practice live mock interviews, and build custom learning roadmaps.
+
+---
+
+## 🌐 Live Platform & Links
+
+- 🔗 **Live Hosted Web Application**: [https://futuro-ai-8ef47.web.app](https://futuro-ai-8ef47.web.app)
+- 💻 **GitHub Repository**: [https://github.com/heetchheda06/Futuro-AI](https://github.com/heetchheda06/Futuro-AI)
+- ⚙️ **Production Backend API Server**: [https://futuro-ai-backend.onrender.com](https://futuro-ai-backend.onrender.com)
+
+---
+
+## 👥 Team
+
+| Member | Role | College |
+| :--- | :--- | :--- |
+| **Heet Chheda** | Full Stack Developer | MCT Rajiv Gandhi Institute of Technology |
+| **Shardul Dalvi** | Backend Developer | MCT Rajiv Gandhi Institute of Technology |
+| **Aryan Keni** | Frontend Developer | MCT Rajiv Gandhi Institute of Technology |
+| **Falgun Patel** | UI/UX & Documentation | Universal College of Engineering, Mumbai |
 
 ---
 
 ## 🌟 Key Features
 
-### 1. 🎯 Career Intelligence
-- **Career Explorer (`/explorer`)**: Comprehensive catalog of 50+ modern career paths with salary compensation bands, demand growth meters, and prerequisite skills.
-- **Career Comparison (`/comparison`)**: Side-by-side comparison matrix for salary trajectories, learning curves, and skills overlap.
+### 1. 🛠️ AI Resume Builder & ATS Analyzer
+- **Dual-Mode System**: Switch seamlessly between **Build Resume** and **Analyze ATS** modes.
+- **AI Summary & Bullet Generator**: Generate professional executive summaries and high-impact action bullets powered by Gemini AI.
+- **5 Accent Color Themes**: Personalize resume designs with `indigo`, `teal`, `emerald`, `rose`, or `slate` themes.
+- **Real-Time A4 PDF Export**: Instant `@media print` A4 document preview and 1-click PDF download.
+
+### 2. 🔑 Authentic Google Authentication
+- **OAuth 2.0 Integration**: Built with Firebase Web SDK (`GoogleAuthProvider`) and explicit account picker parameters (`prompt: 'select_account consent'`).
+- **Secure JWT Session Management**: Signed JWT tokens stored in HTTP headers with local session persistent syncing.
+
+### 3. 🤖 Futuro AI Copilot
+- **Live Conversational Intelligence**: Powered by Google Gemini API (`gemini-1.5-flash`) for real-time, human-like career advice.
+- **Executive Formatting**: Clean custom markdown parser rendering bold titles, indigo code pills, and numbered lists without raw syntax characters.
+
+### 4. 🎯 Career Intelligence & Skill Gap Analytics
+- **Career Explorer (`/explorer`)**: Database of 50+ modern career paths with salary bands, demand growth meters, and skill prerequisites.
+- **Career Comparison (`/comparison`)**: Side-by-side matrix comparing salary trajectories, learning curves, and skills overlap.
 - **Interactive Career Simulator (`/career-simulator`)**: Workplace dilemma roleplay HUD tracking Technical, Leadership, Network, and Stress metrics.
-- **Career News Feed (`/feed`)**: Real-time personalized industry updates, hiring shifts, and breakthrough technology signals.
-- **Academic Marksheet Analyzer (`/marksheet-analysis`)**: Transcript parser identifying strong/weak subject clusters with career mapping.
 
-### 2. 🤖 AI Tools Suite
-- **AI Project Generator (`/ai-tools/project-generator`)**: Context-aware portfolio blueprint generator providing recommended tech stacks, architecture topologies, and step-by-step implementation tasks.
-- **AI Career Mentor (`/chatbot`)**: 24/7 intelligent conversational advisor for roadmap planning and interview coaching.
-- **Resume ATS Analyzer (`/resume`)**: PDF parser computing ATS match scores, missing keywords, and formatting recommendations.
-- **Smart Resume Builder (`/resume-builder`)**: Interactive editor with real-time A4 PDF paper preview and print layout controls.
-- **AI Mock Interview Coach (`/interview`)**: Interactive HR, Technical, and Behavioral drills with STAR-framework scoring breakdowns.
+### 5. 🎙️ AI Mock Interview Coach (`/interview-prep`)
+- **Multi-Category Drills**: HR, Technical, and Behavioral mock interview scenarios.
+- **STAR-Framework Scoring**: Immediate AI scoring feedback on confidence, technical articulation, and structured delivery.
 
-### 3. 📚 Learning Hub (`/learning`)
-- **eBooks Library (`/learning/ebooks`)**: Internet Archive & Open Library integration with search, genre filters, reading progress tracker, and bookmarks.
-- **Course Discovery Engine (`/learning/courses`)**: Normalized multi-provider aggregator for NPTEL / SWAYAM, Coursera, AWS Educate, Google Cloud Skills Boost, and YouTube.
-- **Certification Hub (`/learning/certifications`)**: 30+ verified industry credentials (AWS, Google Cloud, Microsoft, Cisco, CompTIA, Meta, NVIDIA, Docker) with official verification tools.
-- **Learning Roadmap Navigator (`/roadmap`)**: Guided monthly syllabus with 1-click dashboard synchronization.
-
-### 4. 🏛️ Opportunities
-- **College Discovery & Comparison (`/colleges`)**: Comprehensive catalog of 45+ premier institutions (IITs, NITs, IIITs, BITS, Government, Private, and Global Universities) with multi-college side-by-side comparison matrices, verified NIRF rankings, and virtual tours.
-- **Mentor Discovery (`/mentors`)**: Verified professional directory with AI compatibility matching and direct booking requests.
-
-### 5. 📅 Productivity & Platform
-- **AI Calendar (`/calendar`)**: Interactive study calendar with Gemini-powered 30-day preparation schedule synthesis, today's focus task checklists, and streak tracking.
-- **Global Search Modal (`Cmd+K`)**: Unified cross-catalog search across Books, Courses, Certifications, Mentors, Colleges, and Careers.
-- **Admin Console (`/admin`)**: Operations hub with real-time registration trend charts and role popularity analytics.
+### 6. 📚 Learning Hub & Opportunity Finder
+- **eBooks Library (`/learning/ebooks`)**: Open Library integration with search, reading progress tracker, and bookmarks.
+- **Course & Certification Finder (`/learning/courses`)**: Multi-provider catalog aggregating NPTEL/SWAYAM, Coursera, AWS Educate, Google Cloud, and YouTube.
+- **College Discovery (`/colleges`)**: 45+ premier institutions (IITs, NITs, BITS, Private, and Global Universities) with NIRF rankings and comparison matrices.
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## 📁 Project Architecture & Folder Structure
+
+```
+Futuro-AI/
+├── frontend/                   # Next.js 16 App Router Frontend
+│   ├── src/
+│   │   ├── app/                # App Router Pages & Layouts
+│   │   │   ├── resume/         # AI Resume Builder & Real-time A4 PDF Exporter
+│   │   │   ├── login/          # Authentic Firebase Google OAuth Login
+│   │   │   ├── register/       # User Registration with Google OAuth
+│   │   │   ├── dashboard/      # Personalized Executive Career Dashboard
+│   │   │   ├── explorer/       # 50+ Career Catalog Explorer
+│   │   │   ├── assessment/     # AI Skill & Personality Compatibility Tester
+│   │   │   ├── interview-prep/ # Interactive AI Interview Coach
+│   │   │   ├── roadmap/        # Dynamic Skill Learning Roadmap
+│   │   │   ├── ai-career-hub/  # Unified AI Tools Dashboard
+│   │   │   └── ...             # eBooks, Courses, Mentors, Colleges, Calendar
+│   │   ├── components/         # Reusable Component Architecture
+│   │   │   ├── auth/           # Google Auth Button & Login Forms
+│   │   │   ├── shell/          # TopBar, Navigation, Futuro Copilot, CommandPalette
+│   │   │   └── ui/             # Design System Tokens, Buttons, Cards, Badges
+│   │   ├── context/            # Global Authentication & Session Context
+│   │   └── lib/                # Firebase SDK & Client Utilities
+│   ├── public/                 # Static Assets & Icons
+│   ├── firebase.json           # Firebase Hosting Configuration
+│   └── next.config.ts          # Next.js Build & Export Settings
+│
+├── backend/                    # Node.js & Express API Backend
+│   ├── src/
+│   │   ├── config/             # MongoDB Connection & Initial Data Seeders
+│   │   ├── middleware/         # JWT Authentication & Security Rate Limiters
+│   │   ├── models/             # Mongoose Schemas (Users, Careers, Chats, Resumes)
+│   │   ├── routes/             # Express API Endpoints (/api/auth, /api/resumes, /api/chats)
+│   │   ├── services/           # Google Gemini AI Service & Open Library Integrations
+│   │   └── server.ts           # Express Application Entry Point
+│   └── package.json            # Backend Dependencies & TypeScript Scripts
+│
+├── firebase.json               # Root Firebase Hosting Configuration
+├── render.yaml                 # Render Infrastructure-as-Code Deployment Config
+└── README.md                   # Complete Platform Documentation
+```
+
+---
+
+## 🛠️ Tech Stack & Technologies
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Framer Motion, Lucide Icons, Recharts |
-| **Backend** | Node.js, Express, TypeScript, Mongoose, Helmet, CORS, Express Rate Limit |
-| **AI / ML** | Google Gemini 2.5 Flash API, OpenLibrary API, YouTube Data API v3 |
-| **Database** | MongoDB / In-memory verified fallback engine |
+| **Frontend Framework** | Next.js 16 (App Router), React 19, TypeScript |
+| **Styling & UI** | Tailwind CSS v4, Lucide Icons, Framer Motion, Recharts |
+| **Backend API** | Node.js, Express, TypeScript, Mongoose, Helmet, CORS |
+| **Authentication** | Firebase Auth SDK (`GoogleAuthProvider`), JWT Tokens |
+| **Artificial Intelligence** | Google Gemini API (`gemini-1.5-flash` / `gemini-2.0-flash`) |
+| **Database** | MongoDB Atlas Cloud Database |
+| **Hosting & Deployment** | Firebase Hosting (Frontend), Render Web Services (Backend) |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Local Development Setup
 
 ### 1. Prerequisites
 - Node.js >= 20.x
-- npm or yarn
+- Git
 
-### 2. Backend Setup
+### 2. Clone Repository
+```bash
+git clone https://github.com/heetchheda06/Futuro-AI.git
+cd Futuro-AI
+```
+
+### 3. Backend Setup
 ```bash
 cd backend
 npm install
-cp .env.example .env
 npm run dev
 ```
+*Backend will run locally on `http://localhost:5000`.*
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 ```bash
-cd frontend
+cd ../frontend
 npm install
 npm run dev
 ```
+*Frontend will run locally on `http://localhost:3000`.*
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+---
+
+## 📄 License & Attribution
+
+Developed by the **Futuro AI Team** (Heet Chheda, Shardul Dalvi, Aryan Keni, Falgun Patel).
+All rights reserved.
