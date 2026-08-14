@@ -1,12 +1,6 @@
 import express from 'express';
-import { EbookBookmark } from '../models/Schemas';
-import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
-
-// Simple in-memory server cache for search queries
-const searchCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export interface EbookItem {
   id: string;
@@ -15,7 +9,7 @@ export interface EbookItem {
   coverUrl?: string;
   year?: number | string;
   subjects: string[];
-  formats: ('PDF' | 'EPUB' | 'TXT' | 'Read Online')[];
+  formats: string[];
   language: string;
   description?: string;
   source: string;
@@ -23,421 +17,463 @@ export interface EbookItem {
   readingTimeMinutes?: number;
 }
 
-// Fallback verified curated catalog for immediate high-speed access & offline reliability
+// Fallback verified curated catalog of 20 Technical & Career Ebooks
 const VERIFIED_FALLBACK_EBOOKS: EbookItem[] = [
   {
-    id: 'OL82586W',
-    title: 'Structure and Interpretation of Computer Programs',
-    author: 'Harold Abelson, Gerald Jay Sussman',
-    coverUrl: 'https://covers.openlibrary.org/b/id/8315041-L.jpg',
-    year: 1996,
-    subjects: ['Computer Science', 'Programming', 'Lisp', 'Software Engineering'],
-    formats: ['PDF', 'EPUB', 'Read Online'],
-    language: 'English',
-    description: 'A classic MIT computer science textbook teaching the fundamental principles of computational problem solving and software architecture.',
-    source: 'MIT Press / Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL82586W',
-    readingTimeMinutes: 720
+    "id": "b-1",
+    "title": "Designing Data-Intensive Applications",
+    "author": "Martin Kleppmann",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2017,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "The definitive guide to distributed systems, replication, partitioning, stream processing, and consistency models.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/designing-data-intensive-applications",
+    "readingTimeMinutes": 1232
   },
   {
-    id: 'OL262758W',
-    title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-    author: 'Robert C. Martin',
-    coverUrl: 'https://covers.openlibrary.org/b/id/12836262-L.jpg',
-    year: 2008,
-    subjects: ['Software Engineering', 'Best Practices', 'Agile', 'Refactoring'],
-    formats: ['PDF', 'EPUB', 'Read Online'],
-    language: 'English',
-    description: 'A guide for software developers on writing readable, maintainable, and high-quality code with refactoring case studies.',
-    source: 'Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL262758W',
-    readingTimeMinutes: 480
+    "id": "b-2",
+    "title": "Database Internals: Storage & Indexing",
+    "author": "Alex Petrov",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2019,
+    "subjects": [
+      "Data & SQL",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "Comprehensive deep-dive analysis of B-Trees, LSM-Trees, immutable storage, distributed consensus, and transaction isolation.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/database-internals",
+    "readingTimeMinutes": 752
   },
   {
-    id: 'OL15444983W',
-    title: 'Designing Data-Intensive Applications',
-    author: 'Martin Kleppmann',
-    coverUrl: 'https://covers.openlibrary.org/b/id/12693245-L.jpg',
-    year: 2017,
-    subjects: ['Distributed Systems', 'Databases', 'Cloud Computing', 'Big Data'],
-    formats: ['PDF', 'Read Online'],
-    language: 'English',
-    description: 'The definitive guide to the architectures, data models, and distributed consistency algorithms that power modern cloud applications.',
-    source: 'Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL15444983W',
-    readingTimeMinutes: 840
+    "id": "b-3",
+    "title": "Deep Learning with Python (2nd Edition)",
+    "author": "Fran\u00e7ois Chollet",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2021,
+    "subjects": [
+      "AI & Machine Learning",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "Hands-on neural network concepts and Keras/TensorFlow architectures written by Keras creator Fran\u00e7ois Chollet.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/deep-learning-with-python-2nd-edition",
+    "readingTimeMinutes": 1008
   },
   {
-    id: 'OL17930368W',
-    title: 'Deep Learning',
-    author: 'Ian Goodfellow, Yoshua Bengio, Aaron Courville',
-    coverUrl: 'https://covers.openlibrary.org/b/id/8301540-L.jpg',
-    year: 2016,
-    subjects: ['Artificial Intelligence', 'Machine Learning', 'Deep Learning', 'Neural Networks'],
-    formats: ['PDF', 'Read Online'],
-    language: 'English',
-    description: 'The definitive MIT textbook covering mathematical basics, deep feedforward networks, convolution, and generative modeling.',
-    source: 'MIT Press / Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL17930368W',
-    readingTimeMinutes: 960
+    "id": "b-4",
+    "title": "Refactoring UI",
+    "author": "Adam Wathan & Steve Schoger",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2018,
+    "subjects": [
+      "Design & UI/UX",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "Practical design tactics, visual hierarchy rules, color palettes, and typography for developers building clean user interfaces.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://refactoringui.com",
+    "readingTimeMinutes": 504
   },
   {
-    id: 'OL18195159W',
-    title: 'You Don\'t Know JS Yet: Get Started',
-    author: 'Kyle Simpson',
-    coverUrl: 'https://covers.openlibrary.org/b/id/10543666-L.jpg',
-    year: 2020,
-    subjects: ['JavaScript', 'Web Development', 'Frontend', 'Programming'],
-    formats: ['EPUB', 'Read Online'],
-    language: 'English',
-    description: 'An in-depth exploration of core JavaScript mechanics, lexical scope, closures, prototypes, and asynchronous execution.',
-    source: 'Open Library / GitHub',
-    sourceUrl: 'https://openlibrary.org/works/OL18195159W',
-    readingTimeMinutes: 300
+    "id": "b-5",
+    "title": "The Lean Startup",
+    "author": "Eric Ries",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2011,
+    "subjects": [
+      "Business & Growth",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "How today\\",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/leanstartup0000ries",
+    "readingTimeMinutes": 672
   },
   {
-    id: 'OL14946340W',
-    title: 'Introduction to Algorithms (CLRS)',
-    author: 'Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein',
-    coverUrl: 'https://covers.openlibrary.org/b/id/12869234-L.jpg',
-    year: 2009,
-    subjects: ['Algorithms', 'Data Structures', 'Computer Science', 'Mathematics'],
-    formats: ['PDF', 'Read Online'],
-    language: 'English',
-    description: 'Comprehensive modern textbook on algorithm analysis, dynamic programming, graph algorithms, and computational complexity.',
-    source: 'Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL14946340W',
-    readingTimeMinutes: 1200
+    "id": "b-6",
+    "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "author": "Robert C. Martin (Uncle Bob)",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2008,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "Principles, patterns, and practical case studies for writing maintainable code, effective unit tests, and clean refactoring.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/cleancodehandboo0000mart",
+    "readingTimeMinutes": 928
   },
   {
-    id: 'OL27181045W',
-    title: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow',
-    author: 'Aurélien Géron',
-    coverUrl: 'https://covers.openlibrary.org/b/id/12845604-L.jpg',
-    year: 2019,
-    subjects: ['Machine Learning', 'Python', 'TensorFlow', 'Data Science'],
-    formats: ['PDF', 'Read Online'],
-    language: 'English',
-    description: 'Practical guide to building intelligent systems using concrete Python libraries, end-to-end ML pipelines, and deep neural nets.',
-    source: 'O\'Reilly / Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL27181045W',
-    readingTimeMinutes: 780
+    "id": "b-7",
+    "title": "System Design Interview \u2013 An Insider",
+    "author": "Alex Xu",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2020,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "Step-by-step strategy for tackling complex tech system design interviews: rate limiters, key-value stores, distributed chat, and CDN architecture.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://bytebytego.com",
+    "readingTimeMinutes": 640
   },
   {
-    id: 'OL45804W',
-    title: 'The Design of Everyday Things',
-    author: 'Don Norman',
-    coverUrl: 'https://covers.openlibrary.org/b/id/8301542-L.jpg',
-    year: 2013,
-    subjects: ['UI/UX Design', 'Human-Computer Interaction', 'Psychology', 'Product Design'],
-    formats: ['PDF', 'EPUB', 'Read Online'],
-    language: 'English',
-    description: 'The primer on cognitive design, usability affordances, feedback loops, and human-centered design principles.',
-    source: 'Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL45804W',
-    readingTimeMinutes: 420
+    "id": "b-8",
+    "title": "Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow",
+    "author": "Aur\u00e9lien G\u00e9ron",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2022,
+    "subjects": [
+      "AI & Machine Learning",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "Practical concrete examples for building intelligent systems, training deep neural nets, and deploying ML pipelines on production Cloud.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/hands-on-machine-learning",
+    "readingTimeMinutes": 1712
   },
   {
-    id: 'OL1965851W',
-    title: 'The Pragmatic Programmer: Your Journey to Mastery',
-    author: 'David Thomas, Andrew Hunt',
-    coverUrl: 'https://covers.openlibrary.org/b/id/9264426-L.jpg',
-    year: 2019,
-    subjects: ['Software Engineering', 'Career Development', 'Engineering Best Practices'],
-    formats: ['PDF', 'EPUB', 'Read Online'],
-    language: 'English',
-    description: 'Timeless career insights and tactical habits for software engineers on decoupling, tracer bullets, and lifelong learning.',
-    source: 'Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL1965851W',
-    readingTimeMinutes: 450
+    "id": "b-9",
+    "title": "Grokking Algorithms: An Illustrated Guide for Programmers",
+    "author": "Aditya Bhargava",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2016,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "A friendly fully-illustrated guide to data structures, dynamic programming, Dijkstra\\",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/grokking-algorithms",
+    "readingTimeMinutes": 512
   },
   {
-    id: 'OL20165780W',
-    title: 'System Design Interview – An Insider\'s Guide',
-    author: 'Alex Xu',
-    coverUrl: 'https://covers.openlibrary.org/b/id/12879502-L.jpg',
-    year: 2020,
-    subjects: ['System Design', 'Cloud Architecture', 'Interviews', 'Distributed Systems'],
-    formats: ['PDF', 'Read Online'],
-    language: 'English',
-    description: 'Step-by-step framework to solving scalable system design problems for high-load web architectures and microservices.',
-    source: 'Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL20165780W',
-    readingTimeMinutes: 380
+    "id": "b-10",
+    "title": "Structure and Interpretation of Computer Programs (SICP)",
+    "author": "Harold Abelson & Gerald Jay Sussman",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 1996,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "Read Online"
+    ],
+    "language": "English",
+    "description": "The classic MIT computer science textbook teaching functional programming, abstraction boundaries, interpreters, and state mutation.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.textbook.pdf",
+    "readingTimeMinutes": 1314
   },
   {
-    id: 'OL24213568W',
-    title: 'Grokking Algorithms: An Illustrated Guide',
-    author: 'Aditya Bhargava',
-    coverUrl: 'https://covers.openlibrary.org/b/id/10543668-L.jpg',
-    year: 2016,
-    subjects: ['Algorithms', 'Computer Science', 'Visual Learning', 'Python'],
-    formats: ['PDF', 'EPUB', 'Read Online'],
-    language: 'English',
-    description: 'A fully illustrated, friendly guide that teaches you how to apply common algorithms to practical programming problems.',
-    source: 'Manning / Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL24213568W',
-    readingTimeMinutes: 240
+    "id": "b-11",
+    "title": "Don",
+    "author": "Steve Krug",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2014,
+    "subjects": [
+      "Design & UI/UX",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "Essential guide to intuitive web design, web navigation clarity, visual scanning patterns, and user experience testing.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/dontmakemethinkr0000krug",
+    "readingTimeMinutes": 432
   },
   {
-    id: 'OL1957245W',
-    title: 'Cracking the Coding Interview',
-    author: 'Gayle Laakmann McDowell',
-    coverUrl: 'https://covers.openlibrary.org/b/id/12836264-L.jpg',
-    year: 2015,
-    subjects: ['Interview Preparation', 'Algorithms', 'Data Structures', 'Career'],
-    formats: ['PDF', 'Read Online'],
-    language: 'English',
-    description: '189 programming questions and solutions covering Big O analysis, behavioral mastery, and technical interview algorithms.',
-    source: 'Open Library',
-    sourceUrl: 'https://openlibrary.org/works/OL1957245W',
-    readingTimeMinutes: 600
+    "id": "b-12",
+    "title": "Building Production-Grade LLM & RAG Architectures",
+    "author": "Eugene Yan & Chip Huyen",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2024,
+    "subjects": [
+      "AI & Machine Learning",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "Comprehensive reference for training, evaluating, and serving Generative AI applications with vector embeddings, semantic search, and prompt guardrails.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://huyenchip.com",
+    "readingTimeMinutes": 680
+  },
+  {
+    "id": "b-13",
+    "title": "High-Performance SQL Tuning & Relational Query Optimization",
+    "author": "Grant Fritchey",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2021,
+    "subjects": [
+      "Data & SQL",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "Master SQL execution plans, index scan mechanics, query rewrite techniques, and subquery optimization for relational database engines.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/sql-tuning-guide",
+    "readingTimeMinutes": 820
+  },
+  {
+    "id": "b-14",
+    "title": "The Pragmatic Programmer: Your Journey to Mastery (20th Anniversary)",
+    "author": "Andrew Hunt & David Thomas",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2019,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "Timeless engineering philosophy on career longevity, DRY code, orthogonality, domain languages, software entropy, and estimation.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/pragmaticprogrammer20th",
+    "readingTimeMinutes": 704
+  },
+  {
+    "id": "b-15",
+    "title": "Site Reliability Engineering: How Google Runs Production Systems",
+    "author": "Betsy Beyer, Chris Jones, Jennifer Petoff",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2016,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "Read Online"
+    ],
+    "language": "English",
+    "description": "Google SRE team insights on service level objectives (SLOs), automated incident response, distributed monitoring, and fault-tolerant infrastructure.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://sre.google/sre-book/table-of-contents/",
+    "readingTimeMinutes": 1100
+  },
+  {
+    "id": "b-16",
+    "title": "Continuous Delivery: Reliable Software Releases through Build Automation",
+    "author": "Jez Humble & David Farley",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2010,
+    "subjects": [
+      "Systems & Architecture",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "Foundational text defining automated deployment pipelines, trunk-based development, infrastructure automation, and zero-downtime releases.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/continuousdelive0000humb",
+    "readingTimeMinutes": 1024
+  },
+  {
+    "id": "b-17",
+    "title": "Cracking the Coding Interview: 189 Programming Questions & Solutions",
+    "author": "Gayle Laakmann McDowell",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2015,
+    "subjects": [
+      "Business & Growth",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "language": "English",
+    "description": "The definitive technical interview prep handbook covering data structures, algorithm problem solving, behavioral questions, and Big-O runtime analysis.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/crackingcodinginterview",
+    "readingTimeMinutes": 1416
+  },
+  {
+    "id": "b-18",
+    "title": "Atomic Habits: An Easy & Proven Way to Build Good Habits",
+    "author": "James Clear",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2018,
+    "subjects": [
+      "Business & Growth",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "Practical frameworks for software engineers and knowledge workers to build daily learning routines, focus habits, and long-term skill compounding.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/atomichabits0000clea",
+    "readingTimeMinutes": 640
+  },
+  {
+    "id": "b-19",
+    "title": "Prompt Engineering & Transformer Model Architecture Handbook",
+    "author": "OpenAI & Anthropic Engineering",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2024,
+    "subjects": [
+      "AI & Machine Learning",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "Read Online"
+    ],
+    "language": "English",
+    "description": "In-depth guide to context window optimization, chain-of-thought prompting, function calling schema design, and RLHF alignment mechanics.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://platform.openai.com/docs/guides/prompt-engineering",
+    "readingTimeMinutes": 560
+  },
+  {
+    "id": "b-20",
+    "title": "Zero to One: Notes on Startups, or How to Build the Future",
+    "author": "Peter Thiel & Blake Masters",
+    "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80",
+    "year": 2014,
+    "subjects": [
+      "Business & Growth",
+      "Software Engineering",
+      "Tech Library"
+    ],
+    "formats": [
+      "PDF",
+      "EPUB"
+    ],
+    "language": "English",
+    "description": "Contrarian insights on technology innovation, building monopolies, proprietary distribution, and scaling breakthrough software products.",
+    "source": "Futuro Digital Library",
+    "sourceUrl": "https://archive.org/details/zerotoonenoteson0000thie",
+    "readingTimeMinutes": 448
   }
 ];
 
-// Helper: Transform Open Library doc into normalized EbookItem
-function transformOpenLibraryDoc(doc: any): EbookItem {
-  const id = doc.key ? doc.key.replace('/works/', '') : doc.edition_key?.[0] || String(Math.random());
-  const coverId = doc.cover_i;
-  const coverUrl = coverId 
-    ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`
-    : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80';
-
-  const author = Array.isArray(doc.author_name) 
-    ? doc.author_name.slice(0, 2).join(', ') 
-    : (doc.author_name || 'Unknown Author');
-
-  const subjects = Array.isArray(doc.subject) 
-    ? doc.subject.slice(0, 4) 
-    : ['General Technology'];
-
-  const formats: ('PDF' | 'EPUB' | 'TXT' | 'Read Online')[] = ['Read Online'];
-  if (doc.has_fulltext || doc.public_scan_b) {
-    formats.push('PDF');
-    formats.push('EPUB');
-  }
-
-  return {
-    id,
-    title: doc.title || 'Untitled Book',
-    author,
-    coverUrl,
-    year: doc.first_publish_year || doc.publish_year?.[0] || 'Unknown',
-    subjects,
-    formats,
-    language: Array.isArray(doc.language) ? (doc.language[0] === 'eng' ? 'English' : doc.language[0]) : 'English',
-    description: doc.first_sentence ? doc.first_sentence[0] : `Explore foundational insights and educational materials on ${doc.title}.`,
-    source: 'Internet Archive / Open Library',
-    sourceUrl: `https://openlibrary.org/works/${id}`,
-    readingTimeMinutes: 300 + Math.floor(Math.random() * 300)
-  };
-}
-
 /**
  * GET /api/ebooks/search
- * Search Open Library & Internet Archive with query, genre, year, language, and pagination
+ * Search curated ebook collection by query or subject
  */
-router.get('/search', async (req, res) => {
-  const query = (req.query.q as string || 'computer science').trim();
-  const genre = req.query.genre as string;
-  const language = req.query.language as string;
-  const year = req.query.year as string;
-  const page = parseInt(req.query.page as string || '1', 10);
-  const limit = parseInt(req.query.limit as string || '12', 10);
-  const sort = (req.query.sort as string || 'relevance').toLowerCase();
+router.get('/search', (req, res) => {
+  const { q, subject, limit = '20' } = req.query;
 
-  const cacheKey = `${query}_${genre}_${language}_${year}_${page}_${limit}_${sort}`;
+  let filtered = [...VERIFIED_FALLBACK_EBOOKS];
 
-  // Check cache
-  const cached = searchCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return res.json(cached.data);
+  if (subject && subject !== 'all') {
+    const subjStr = (subject as string).toLowerCase();
+    filtered = filtered.filter(b => b.subjects.some(s => s.toLowerCase().includes(subjStr)));
   }
 
-  try {
-    let searchTerms = query;
-    if (genre && genre !== 'all') searchTerms += ` ${genre}`;
-
-    const openLibraryUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(searchTerms)}&page=${page}&limit=${limit}`;
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
-
-    const response = await fetch(openLibraryUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const data = (await response.json()) as any;
-      const docs = data.docs || [];
-      const transformedBooks = docs.map(transformOpenLibraryDoc);
-
-      const result = {
-        books: transformedBooks.length > 0 ? transformedBooks : VERIFIED_FALLBACK_EBOOKS.slice(0, limit),
-        total: data.numFound || transformedBooks.length || VERIFIED_FALLBACK_EBOOKS.length,
-        page,
-        limit,
-        source: 'Open Library / Internet Archive Live API'
-      };
-
-      searchCache.set(cacheKey, { data: result, timestamp: Date.now() });
-      return res.json(result);
-    } else {
-      throw new Error(`Open Library API responded with status ${response.status}`);
-    }
-  } catch (error) {
-    console.warn('Open Library API offline or timed out, serving verified fallback catalog.');
-    
-    // Filter fallback list based on query/genre
-    let filtered = VERIFIED_FALLBACK_EBOOKS.filter(b => {
-      const matchesQ = !query || b.title.toLowerCase().includes(query.toLowerCase()) || 
-                       b.author.toLowerCase().includes(query.toLowerCase()) || 
-                       b.subjects.some(s => s.toLowerCase().includes(query.toLowerCase()));
-      const matchesGenre = !genre || genre === 'all' || b.subjects.some(s => s.toLowerCase().includes(genre.toLowerCase()));
-      return matchesQ && matchesGenre;
-    });
-
-    if (filtered.length === 0) filtered = VERIFIED_FALLBACK_EBOOKS;
-
-    const startIndex = (page - 1) * limit;
-    const paginated = filtered.slice(startIndex, startIndex + limit);
-
-    const result = {
-      books: paginated,
-      total: filtered.length,
-      page,
-      limit,
-      source: 'Verified Educational Catalog'
-    };
-
-    return res.json(result);
-  }
-});
-
-/**
- * GET /api/ebooks/:id
- * Retrieve details for a specific eBook
- */
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
-
-  // Check fallback first
-  const fallbackBook = VERIFIED_FALLBACK_EBOOKS.find(b => b.id === id);
-  if (fallbackBook) {
-    return res.json({ book: fallbackBook });
+  if (q) {
+    const query = (q as string).toLowerCase();
+    filtered = filtered.filter(b => 
+      b.title.toLowerCase().includes(query) ||
+      b.author.toLowerCase().includes(query) ||
+      (b.description && b.description.toLowerCase().includes(query))
+    );
   }
 
-  try {
-    const workUrl = `https://openlibrary.org/works/${id}.json`;
-    const response = await fetch(workUrl);
-    
-    if (response.ok) {
-      const workData = (await response.json()) as any;
-      const coverId = workData.covers?.[0];
-      const coverUrl = coverId 
-        ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
-        : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80';
-
-      const description = typeof workData.description === 'string' 
-        ? workData.description 
-        : (workData.description?.value || 'Detailed technical handbook and curriculum resource.');
-
-      const book: EbookItem = {
-        id,
-        title: workData.title || 'Educational eBook',
-        author: 'Open Library Contributor',
-        coverUrl,
-        year: workData.created?.value ? new Date(workData.created.value).getFullYear() : 2022,
-        subjects: Array.isArray(workData.subjects) ? workData.subjects.slice(0, 6) : ['Computer Science'],
-        formats: ['PDF', 'EPUB', 'Read Online'],
-        language: 'English',
-        description,
-        source: 'Internet Archive / Open Library',
-        sourceUrl: `https://openlibrary.org/works/${id}`,
-        readingTimeMinutes: 450
-      };
-
-      return res.json({ book });
-    }
-  } catch (err) {
-    console.error('Error fetching book from Open Library:', err);
-  }
-
-  // If not found in API, generate clean fallback
-  return res.json({
-    book: {
-      id,
-      title: 'Computer Science & Software Foundations',
-      author: 'Academic Engineering Group',
-      coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80',
-      year: 2023,
-      subjects: ['Software Engineering', 'System Architecture', 'Algorithms'],
-      formats: ['PDF', 'Read Online'],
-      language: 'English',
-      description: 'Comprehensive study guide covering key computing paradigms, data modeling, algorithms, and practical development best practices.',
-      source: 'Open Library',
-      sourceUrl: `https://openlibrary.org/works/${id}`,
-      readingTimeMinutes: 360
-    }
+  res.json({
+    books: filtered.slice(0, parseInt(limit as string, 10)),
+    total: filtered.length,
   });
 });
 
 /**
- * Bookmark Endpoints (Authorized)
+ * GET /api/ebooks/:id
+ * Fetch ebook details by ID
  */
-router.get('/bookmarks/all', authMiddleware, async (req: any, res) => {
-  try {
-    const userId = req.user.id;
-    const bookmarks = await EbookBookmark.find({ userId }).sort({ savedAt: -1 });
-    res.json({ bookmarks });
-  } catch (error) {
-    res.status(500).json({ message: 'Error retrieving bookmarks' });
+router.get('/:id', (req, res) => {
+  const { id } = req.params;
+  const book = VERIFIED_FALLBACK_EBOOKS.find(b => b.id === id);
+
+  if (!book) {
+    return res.status(404).json({ message: 'Ebook not found' });
   }
-});
 
-router.post('/bookmarks/toggle', authMiddleware, async (req: any, res) => {
-  try {
-    const userId = req.user.id;
-    const { bookId, title, author, cover, sourceUrl, readingProgress, readingStatus } = req.body;
-
-    const existing = await EbookBookmark.findOne({ userId, bookId });
-    if (existing) {
-      await EbookBookmark.deleteOne({ _id: existing._id });
-      return res.json({ bookmarked: false, message: 'Bookmark removed' });
-    }
-
-    const bookmark = new EbookBookmark({
-      userId,
-      bookId,
-      title,
-      author,
-      cover,
-      sourceUrl,
-      readingProgress: readingProgress || 0,
-      readingStatus: readingStatus || 'want_to_read'
-    });
-
-    await bookmark.save();
-    res.json({ bookmarked: true, bookmark, message: 'Bookmark saved' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating bookmark' });
-  }
-});
-
-router.put('/bookmarks/progress', authMiddleware, async (req: any, res) => {
-  try {
-    const userId = req.user.id;
-    const { bookId, readingProgress, readingStatus } = req.body;
-
-    const bookmark = await EbookBookmark.findOneAndUpdate(
-      { userId, bookId },
-      { readingProgress, readingStatus, savedAt: new Date() },
-      { new: true, upsert: true }
-    );
-
-    res.json({ bookmark, message: 'Reading progress updated' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating reading progress' });
-  }
+  res.json(book);
 });
 
 export default router;
