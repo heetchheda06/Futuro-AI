@@ -1,14 +1,17 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, UserCredential } from 'firebase/auth';
 
+// Google OAuth Client ID provided by Firebase Project
+export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '9949998046-54secmerttj8cn7mr4pq43gndcq9h76r.apps.googleusercontent.com';
+
 // Firebase Project Web Configuration for futuro-ai-8ef47
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyA_DemoKey_FuturoAI_2026',
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'futuro-ai-8ef47.firebaseapp.com',
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'futuro-ai-8ef47',
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'futuro-ai-8ef47.appspot.com',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '1029384756',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:1029384756:web:a1b2c3d4e5f6'
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '9949998046',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:9949998046:web:a1b2c3d4e5f6'
 };
 
 // Initialize Firebase App singleton
@@ -26,7 +29,7 @@ provider.setCustomParameters({
 export const googleProvider = provider;
 
 /**
- * Trigger Authentic Firebase Google OAuth Consent & Sign-In Popup
+ * Trigger Firebase Google Auth Popup
  */
 export const signInWithGooglePopup = async () => {
   try {

@@ -1,14 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { auth, provider } from '../../lib/firebase';
+import { auth, provider, GOOGLE_CLIENT_ID } from '../../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 
 interface GoogleAuthButtonProps {
   mode?: 'login' | 'register';
   onError?: (message: string) => void;
   className?: string;
+}
+
+declare global {
+  interface Window {
+    google?: any;
+  }
 }
 
 export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
@@ -19,45 +25,105 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   const { googleLogin } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  // Load Google Identity Services SDK as a fail-safe
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.google?.accounts?.id) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+  }, []);
+
+  const parseJwt = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      return null;
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     if (onError) onError('');
 
     try {
+      // Method 1: Try Firebase Auth popup
       const result = await signInWithPopup(auth, provider);
-      // This gives you a Google Access Token.
       const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential?.accessToken;
-      // The signed-in user info
       const user = result.user;
-      console.log("Successfully signed in:", user.displayName);
 
-      if (!user || !user.email) {
-        throw new Error('Google account did not return a valid email address.');
+      if (user && user.email) {
+        console.log("Successfully signed in via Firebase Auth:", user.displayName);
+        await googleLogin(
+          user.email,
+          user.displayName || user.email.split('@')[0],
+          user.uid,
+          user.photoURL || undefined
+        );
+        return;
+      }
+    } catch (firebaseErr: any) {
+      console.warn("Firebase popup auth note:", firebaseErr.message || firebaseErr);
+
+      if (firebaseErr.code === 'auth/popup-closed-by-user' || firebaseErr.code === 'auth/cancelled-popup-request') {
+        if (onError) onError('Google Sign-In popup was closed before completing authentication.');
+        setLoading(false);
+        return;
       }
 
-      // Log in user with authentic Google profile details
-      await googleLogin(
-        user.email,
-        user.displayName || user.email.split('@')[0],
-        user.uid,
-        user.photoURL || undefined
-      );
-    } catch (error: any) {
-      console.error("Error during sign-in:", error.message || error);
+      // Method 2: Fallback to Google Identity Services (GIS) OAuth Web Client ID
+      if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: async (response: any) => {
+              if (response.credential) {
+                const payload = parseJwt(response.credential);
+                if (payload && payload.email) {
+                  console.log("Successfully signed in via Google Identity Services:", payload.name);
+                  await googleLogin(
+                    payload.email,
+                    payload.name || payload.email.split('@')[0],
+                    payload.sub || 'g_' + Date.now(),
+                    payload.picture || undefined
+                  );
+                }
+              }
+            }
+          });
 
-      let userMsg = error.message || 'Google Authentication failed. Please try again.';
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-        userMsg = 'Google Sign-In popup was closed before completing authorization.';
-      } else if (error.code === 'auth/popup-blocked') {
+          window.google.accounts.id.prompt((notification: any) => {
+            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+              if (onError) {
+                onError('Please allow Google Account popups or check browser permissions.');
+              }
+            }
+          });
+          return;
+        } catch (gisErr: any) {
+          console.error("GIS Sign-In error:", gisErr);
+        }
+      }
+
+      let userMsg = firebaseErr.message || 'Google Authentication failed. Please try again.';
+      if (firebaseErr.code === 'auth/popup-blocked') {
         userMsg = 'Google Sign-In popup was blocked by your browser. Please allow popups for this site.';
-      } else if (error.code === 'auth/unauthorized-domain') {
-        userMsg = 'This web domain is not authorized in Firebase Console -> Authentication -> Settings -> Authorized domains.';
+      } else if (firebaseErr.code === 'auth/unauthorized-domain') {
+        userMsg = 'Please authorize your website domain in Firebase Console -> Authentication -> Settings -> Authorized domains.';
       }
 
-      if (onError) {
-        onError(userMsg);
-      }
+      if (onError) onError(userMsg);
     } finally {
       setLoading(false);
     }
