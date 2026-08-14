@@ -16,6 +16,87 @@ interface Message {
   text: string;
 }
 
+/**
+ * Custom inline formatting parser for bold text (**bold**) and inline tags (`code`)
+ */
+const parseInlineFormatting = (text: string) => {
+  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={index} className="font-bold text-slate-900">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={index} className="px-1.5 py-0.5 mx-0.5 rounded-md bg-indigo-100/90 text-indigo-700 font-mono text-[11px] font-semibold border border-indigo-200/60 inline-block">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+};
+
+/**
+ * Executive markdown text renderer removing raw symbols like **, `, and ###
+ */
+const formatMessageContent = (content: string) => {
+  const lines = content.split('\n');
+  return lines.map((line, idx) => {
+    // Header parsing
+    if (line.startsWith('### ')) {
+      return (
+        <h4 key={idx} className="font-bold text-sm text-indigo-950 mt-2.5 mb-1 font-outfit">
+          {parseInlineFormatting(line.replace('### ', ''))}
+        </h4>
+      );
+    }
+
+    // Numbered list parsing (e.g. 1. **Title**: Description)
+    const listMatch = line.match(/^(\d+)\.\s+(.*)/);
+    if (listMatch) {
+      const num = listMatch[1];
+      const rest = listMatch[2];
+      return (
+        <div key={idx} className="flex items-start space-x-2.5 my-2 pl-0.5">
+          <span className="w-4 h-4 shrink-0 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center mt-0.5 shadow-2xs">
+            {num}
+          </span>
+          <div className="flex-1 text-slate-800 leading-relaxed">
+            {parseInlineFormatting(rest)}
+          </div>
+        </div>
+      );
+    }
+
+    // Bullet points parsing (e.g. - Item or * Item)
+    const bulletMatch = line.match(/^[-*]\s+(.*)/);
+    if (bulletMatch) {
+      return (
+        <div key={idx} className="flex items-start space-x-2 my-1.5 pl-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 mt-1.5" />
+          <div className="flex-1 text-slate-800 leading-relaxed">
+            {parseInlineFormatting(bulletMatch[1])}
+          </div>
+        </div>
+      );
+    }
+
+    if (!line.trim()) {
+      return <div key={idx} className="h-1" />;
+    }
+
+    return (
+      <p key={idx} className="my-1 text-slate-800 leading-relaxed">
+        {parseInlineFormatting(line)}
+      </p>
+    );
+  });
+};
+
 export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
@@ -137,16 +218,18 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`p-4 rounded-2xl leading-relaxed whitespace-pre-wrap ${
+              className={`p-4 rounded-2xl text-slate-800 ${
                 msg.role === 'ai'
-                  ? 'bg-violet-50/80 border border-violet-200 text-slate-800 shadow-2xs'
-                  : 'bg-slate-100 border border-slate-200 text-slate-900 ml-6'
+                  ? 'bg-violet-50/80 border border-violet-200 shadow-2xs'
+                  : 'bg-slate-100 border border-slate-200 ml-6 font-medium text-slate-900'
               }`}
             >
-              <div className="flex items-center space-x-1.5 font-bold text-[10px] text-slate-400 mb-1">
+              <div className="flex items-center space-x-1.5 font-bold text-[10px] text-slate-400 mb-1.5">
                 <span>{msg.role === 'ai' ? '✦ FUTURO COPILOT' : 'YOU'}</span>
               </div>
-              {msg.text}
+              <div className="space-y-1">
+                {formatMessageContent(msg.text)}
+              </div>
             </div>
           ))}
 
@@ -165,7 +248,7 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
               <button
                 key={idx}
                 onClick={() => handleSend(p)}
-                className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors border border-slate-200 cursor-pointer shrink-0"
+                className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors border border-slate-200 cursor-pointer shrink-0 font-medium"
               >
                 {p}
               </button>
@@ -184,7 +267,7 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Futuro AI anything about your career..."
-              className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
+              className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 font-medium"
             />
             <button
               type="submit"
