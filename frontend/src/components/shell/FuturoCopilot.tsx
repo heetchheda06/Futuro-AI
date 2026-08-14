@@ -37,7 +37,7 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
     'Prepare me for interviews',
   ];
 
-  const handleSend = (promptText?: string) => {
+  const handleSend = async (promptText?: string) => {
     const textToSend = promptText || input;
     if (!textToSend.trim() || loading) return;
 
@@ -46,16 +46,56 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
     setInput('');
     setLoading(true);
 
-    setTimeout(() => {
-      setMessages([
-        ...newMsgs,
-        {
-          role: 'ai',
-          text: `Futuro AI Analysis for "${textToSend}":\n\n1. Target Alignment: 94% synergistic with your current career trajectory as ${user?.targetCareer || 'Full Stack AI Engineer'}.\n2. Recommended Action: Strengthen vector search indexing in Week 3 of your roadmap and run 1 mock interview session.`,
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+      const response = await fetch(`${apiBase}/chats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-      ]);
-      setLoading(false);
-    }, 700);
+        body: JSON.stringify({ message: textToSend })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const aiText = data.aiMessage?.content || data.message;
+        if (aiText) {
+          setMessages([...newMsgs, { role: 'ai', text: aiText }]);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend chat API request failed, using intelligent client fallback:', err);
+    }
+
+    // Dynamic Intelligent Response Fallback
+    const lower = textToSend.toLowerCase().trim();
+    let reply = '';
+    if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower.startsWith('hi ') || lower.startsWith('hello ')) {
+      reply = `Hello ${user?.name || 'there'}! 👋 I am Futuro AI, your personal Career Copilot. How can I assist you with your career goals today?`;
+    } else if (lower.includes('resume') || lower.includes('cv')) {
+      reply = `To create an ATS-optimized resume:\n\n1. **Use Action Verbs**: Start bullets with strong impact verbs.\n2. **Quantify Metrics**: Highlight measurable outputs (e.g., "Boosted retention by 25%").\n3. **Try AI Builder**: Switch to **Build Resume** mode on the \`/resume\` page to generate & download your A4 PDF!`;
+    } else if (lower.includes('interview')) {
+      reply = `For interview preparation:\n\n1. Use the **STAR Framework** (Situation, Task, Action, Result).\n2. Practice mock coding & behavioral sessions on the \`/interview-prep\` tool.\n3. Tailor your core stories to match key requirements for ${user?.targetCareer || 'your desired role'}.`;
+    } else {
+      reply = `Futuro AI Guidance for "${textToSend}":\n\n1. **Career Alignment**: Tailored specifically for your trajectory as ${user?.targetCareer || 'Full Stack AI Engineer'}.\n2. **Recommended Action**: Deepen hands-on practice, generate projects on \`/ai-tools/project-generator\`, and review target skill benchmarks.`;
+    }
+
+    setMessages([...newMsgs, { role: 'ai', text: reply }]);
+    setLoading(false);
+  };
+
+  const handleClear = () => {
+    setMessages([
+      {
+        role: 'ai',
+        text: `Hello ${user?.name || 'User'}! I am Futuro AI, your personal Career Copilot. How can I help optimize your career trajectory today?`,
+      },
+    ]);
   };
 
   return (
@@ -75,12 +115,21 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
               <span className="text-[10px] text-slate-500 font-medium">Your Career Intelligence Assistant</span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={handleClear}
+              title="Clear Conversation"
+              className="p-1.5 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Messages List */}
@@ -102,45 +151,48 @@ export function FuturoCopilot({ isOpen, onClose }: FuturoCopilotProps) {
           ))}
 
           {loading && (
-            <div className="p-3 rounded-2xl bg-violet-50/80 border border-violet-200 text-xs text-violet-700 flex items-center space-x-2">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>Analyzing career context...</span>
+            <div className="p-4 rounded-2xl bg-violet-50/80 border border-violet-200 text-slate-600 flex items-center space-x-2 text-xs">
+              <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
+              <span>Futuro AI is generating your response...</span>
             </div>
           )}
         </div>
 
-        {/* Quick Action Chips */}
-        <div className="space-y-2 pt-2 border-t border-slate-200">
-          <div className="flex flex-wrap gap-1.5">
-            {quickPrompts.map((qp, i) => (
+        {/* Quick Suggestions & Input */}
+        <div className="space-y-3 pt-3 border-t border-slate-200">
+          <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-[11px] scrollbar-none">
+            {quickPrompts.map((p, idx) => (
               <button
-                key={i}
-                onClick={() => handleSend(qp)}
-                className="px-2.5 py-1 rounded-lg text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-medium cursor-pointer transition-colors"
+                key={idx}
+                onClick={() => handleSend(p)}
+                className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors border border-slate-200 cursor-pointer shrink-0"
               >
-                {qp}
+                {p}
               </button>
             ))}
           </div>
 
-          {/* Form Input */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSend();
             }}
-            className="flex gap-2"
+            className="flex items-center space-x-2"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Futuro AI anything about your career..."
-              className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
             />
-            <Button variant="primary" size="sm" type="submit" loading={loading}>
-              <Send className="w-3.5 h-3.5" />
-            </Button>
+            <button
+              type="submit"
+              disabled={!input.trim() || loading}
+              className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </form>
         </div>
       </div>

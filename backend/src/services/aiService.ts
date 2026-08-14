@@ -25,8 +25,9 @@ export class AIService {
   private static async queryGemini(prompt: string, jsonMode: boolean = true): Promise<string> {
     const key = this.getGeminiKey();
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-      const response = await fetch(url, {
+      // Try primary gemini-1.5-flash model
+      let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+      let response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -36,6 +37,21 @@ export class AIService {
           } : undefined
         })
       });
+
+      // Fallback to gemini-2.0-flash or gemini-1.5-pro if needed
+      if (!response.ok) {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: jsonMode ? {
+              responseMimeType: 'application/json'
+            } : undefined
+          })
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Gemini API returned status ${response.status}`);
@@ -1619,6 +1635,52 @@ Return JSON: {"enhanced": "...", "impact": "+XX% Metric Impact"}`;
     }
 
     return `Keep pushing forward! Your technical skill is at ${state.stats.technical}% and leadership is at ${state.stats.leadership}%. Focus on taking balanced decisions to secure your next promotion to the next tier.`;
+  }
+
+  /**
+   * AI Chat response for Futuro Copilot chatbot
+   */
+  static async getChatResponse(history: { role: string; content: string }[], userMessage: string, targetCareer?: string): Promise<string> {
+    const key = this.getGeminiKey();
+    const systemPrompt = `You are Futuro AI, an empathetic, highly intelligent AI Career Copilot and executive career strategist. 
+The user is aiming for or currently building a career as: ${targetCareer || 'Technology & Innovation Professional'}.
+Provide concise, highly actionable, encouraging, and tailored career guidance. Format your output using clear markdown formatting, bullet points, and actionable next steps.`;
+
+    const formattedHistory = history.map(h => `${h.role === 'user' ? 'User' : 'Futuro AI'}: ${h.content}`).join('\n');
+    const fullPrompt = `${systemPrompt}\n\nChat History:\n${formattedHistory}\n\nUser Question: ${userMessage}\n\nFuturo AI Answer:`;
+
+    if (key) {
+      try {
+        const responseText = await this.queryGemini(fullPrompt, false);
+        if (responseText && responseText.trim()) return responseText.trim();
+      } catch (err) {
+        console.warn('Gemini chat query failed, trying OpenAI or smart fallback:', err);
+      }
+    }
+
+    const openAiKey = this.getOpenAIKey();
+    if (openAiKey) {
+      try {
+        const responseText = await this.queryOpenAI(fullPrompt, false);
+        if (responseText && responseText.trim()) return responseText.trim();
+      } catch (err) {
+        console.warn('OpenAI chat query failed:', err);
+      }
+    }
+
+    // Dynamic intelligent fallback based on user's query if API keys are pending
+    const lower = userMessage.toLowerCase().trim();
+    if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower.startsWith('hi ') || lower.startsWith('hello ')) {
+      return `Hello! 👋 I am Futuro AI, your personal Career Intelligence Copilot. How can I help optimize your career trajectory, analyze your skills, or prepare you for interviews today?`;
+    }
+    if (lower.includes('resume') || lower.includes('cv')) {
+      return `To optimize your resume for ATS screening:\n\n1. **Quantify Achievements**: Use metrics (e.g., "Increased server speed by 40%").\n2. **Tailor Keywords**: Align your skills directly with job description requirements.\n3. **Use Clean Formatting**: You can build and export print-ready A4 ATS resumes right here in our **AI Resume Builder** tool on the \`/resume\` page!`;
+    }
+    if (lower.includes('interview') || lower.includes('prep')) {
+      return `For technical and behavioral interview preparation:\n\n1. **STAR Method**: Structure answers as Situation, Task, Action, and Result.\n2. **Core Fundamentals**: Practice system design and data structures in our **AI Interviewer** module.\n3. **Mock Sessions**: Launch a live mock interview session on \`/interview-prep\` to receive real-time score feedback!`;
+    }
+
+    return `I evaluated your question regarding "${userMessage}":\n\n1. **Target Alignment**: Tailored for your path as ${targetCareer || 'Full Stack AI Engineer'}.\n2. **Key Skills to Focus On**: Deepen your hands-on mastery of system architecture, cloud deployment, and AI API integrations.\n3. **Recommended Action Step**: Explore customized learning roadmaps on \`/roadmap\` or generate practice projects on \`/ai-tools/project-generator\`!`;
   }
 }
 
