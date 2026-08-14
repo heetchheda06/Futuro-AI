@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { signInWithGooglePopup } from '../../lib/firebase';
+import { auth, provider } from '../../lib/firebase';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 
 interface GoogleAuthButtonProps {
   mode?: 'login' | 'register';
@@ -18,35 +19,44 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   const { googleLogin } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleClick = async () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     if (onError) onError('');
 
     try {
-      // 1. Trigger Firebase Popup Google Authentication
-      const gUser = await signInWithGooglePopup();
-      if (!gUser.email) {
+      const result = await signInWithPopup(auth, provider);
+      // This gives you a Google Access Token.
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      // The signed-in user info
+      const user = result.user;
+      console.log("Successfully signed in:", user.displayName);
+
+      if (!user || !user.email) {
         throw new Error('Google account did not return a valid email address.');
       }
 
-      // 2. Authenticate with Futuro AI backend session
-      await googleLogin(gUser.email, gUser.displayName, gUser.uid, gUser.photoURL);
-    } catch (err: any) {
-      console.warn('Firebase Google Auth error/popup cancelled. Activating session fallback.', err);
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        if (onError) onError('Google sign-in popup was cancelled.');
-        setLoading(false);
-        return;
+      // Log in user with authentic Google profile details
+      await googleLogin(
+        user.email,
+        user.displayName || user.email.split('@')[0],
+        user.uid,
+        user.photoURL || undefined
+      );
+    } catch (error: any) {
+      console.error("Error during sign-in:", error.message || error);
+
+      let userMsg = error.message || 'Google Authentication failed. Please try again.';
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        userMsg = 'Google Sign-In popup was closed before completing authorization.';
+      } else if (error.code === 'auth/popup-blocked') {
+        userMsg = 'Google Sign-In popup was blocked by your browser. Please allow popups for this site.';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        userMsg = 'This web domain is not authorized in Firebase Console -> Authentication -> Settings -> Authorized domains.';
       }
 
-      // Fallback session mode for offline / unconfigured domain testing
-      try {
-        const fallbackEmail = `google_user_${Date.now().toString().slice(-4)}@example.com`;
-        const fallbackName = 'Google Member';
-        const fallbackUid = 'g_uid_' + Date.now();
-        await googleLogin(fallbackEmail, fallbackName, fallbackUid);
-      } catch (fallbackErr: any) {
-        if (onError) onError(err.message || 'Google Authentication failed. Please try again.');
+      if (onError) {
+        onError(userMsg);
       }
     } finally {
       setLoading(false);
@@ -56,7 +66,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   return (
     <button
       type="button"
-      onClick={handleGoogleClick}
+      onClick={handleGoogleSignIn}
       disabled={loading}
       className={`w-full py-2.5 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all shadow-2xs flex items-center justify-center space-x-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
     >
@@ -84,7 +94,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
       )}
       <span>
         {loading
-          ? 'Signing in with Google...'
+          ? 'Connecting Google Account...'
           : mode === 'login'
           ? 'Sign in with Google'
           : 'Sign up with Google'}
